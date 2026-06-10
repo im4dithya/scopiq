@@ -72,8 +72,9 @@ function Index() {
   const ripple = useRipple();
 
   const [appName, setAppName] = useState("");
+  const [productUrl, setProductUrl] = useState("");
   const [focus, setFocus] = useState("overall");
-  const [observation, setObservation] = useState("");
+  const [notes, setNotes] = useState("");
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
