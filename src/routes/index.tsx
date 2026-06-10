@@ -209,11 +209,22 @@ function Index() {
               </select>
             </div>
 
+            <div className="mb-5">
+              <label className="field-label">Product URL (optional)</label>
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="https://..."
+                className="field-input"
+              />
+            </div>
+
             <div className="mb-2">
-              <label className="field-label">Your observation (optional)</label>
+              <label className="field-label">Notes (optional)</label>
               <textarea
-                value={observation}
-                onChange={(e) => setObservation(e.target.value)}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="Anything you personally noticed — a pain point, a clever design, something confusing..."
                 className="field-input min-h-[88px] resize-y leading-relaxed"
               />
