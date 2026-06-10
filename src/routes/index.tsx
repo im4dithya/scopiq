@@ -72,8 +72,9 @@ function Index() {
   const ripple = useRipple();
 
   const [appName, setAppName] = useState("");
+  const [productUrl, setProductUrl] = useState("");
   const [focus, setFocus] = useState("overall");
-  const [observation, setObservation] = useState("");
+  const [notes, setNotes] = useState("");
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -93,7 +94,8 @@ function Index() {
     setPost(null);
     setInsights([]);
     setAppName("");
-    setObservation("");
+    setProductUrl("");
+    setNotes("");
     setFocus("overall");
     setActiveChip(null);
     setError(null);
@@ -121,8 +123,9 @@ function Index() {
       const result = await generate({
         data: {
           appName: appName.trim(),
+          productUrl: productUrl.trim(),
           focus,
-          observation: observation.trim(),
+          notes: notes.trim(),
         },
       });
       setPost(result.post);
@@ -206,11 +209,22 @@ function Index() {
               </select>
             </div>
 
+            <div className="mb-5">
+              <label className="field-label">Product URL (optional)</label>
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="https://..."
+                className="field-input"
+              />
+            </div>
+
             <div className="mb-2">
-              <label className="field-label">Your observation (optional)</label>
+              <label className="field-label">Notes (optional)</label>
               <textarea
-                value={observation}
-                onChange={(e) => setObservation(e.target.value)}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="Anything you personally noticed — a pain point, a clever design, something confusing..."
                 className="field-input min-h-[88px] resize-y leading-relaxed"
               />

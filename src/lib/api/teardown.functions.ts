@@ -14,8 +14,9 @@ export const generateTeardown = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       appName: z.string().min(1),
+      productUrl: z.string().optional().default(""),
       focus: z.string().min(1),
-      observation: z.string().optional().default(""),
+      notes: z.string().optional().default(""),
     }),
   )
   .handler(async ({ data }) => {
@@ -45,7 +46,7 @@ IMPROVE: [something to improve]
 
 Keep the insights crisp and specific to the app.`;
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${data.appName}, focusing on the ${focusLabel}.${data.observation ? ` The student personally noticed: "${data.observation}"` : ""} Make it feel authentic and student-perspective.`;
+    const userPrompt = `Generate a LinkedIn product teardown post about ${data.appName}, focusing on the ${focusLabel}.${data.productUrl ? ` Product URL: ${data.productUrl}` : ""}${data.notes ? ` The student noted: "${data.notes}"` : ""} Make it feel authentic and student-perspective.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
