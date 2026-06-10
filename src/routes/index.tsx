@@ -123,8 +123,9 @@ function Index() {
       const result = await generate({
         data: {
           appName: appName.trim(),
+          productUrl: productUrl.trim(),
           focus,
-          observation: observation.trim(),
+          notes: notes.trim(),
         },
       });
       setPost(result.post);
