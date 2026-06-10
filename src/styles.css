@@ -127,7 +127,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: oklch(0.92 0.08 230);
+  color: oklch(0.92 0.08 210);
 }
 .display-h1 {
   font-family: var(--font-display);
@@ -138,7 +138,7 @@
   color: var(--color-foreground);
 }
 .text-gradient-blue {
-  background: linear-gradient(120deg, oklch(0.92 0.12 230), oklch(0.78 0.18 245), oklch(0.68 0.2 260));
+  background: linear-gradient(120deg, oklch(0.94 0.1 210), oklch(0.82 0.16 215), oklch(0.72 0.18 220));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -146,7 +146,7 @@
 .mono-sub {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: oklch(0.82 0.04 240);
+  color: oklch(0.82 0.04 215);
   line-height: 1.6;
 }
 
