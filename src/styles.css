@@ -41,37 +41,37 @@
 :root {
   --radius: 0.75rem;
 
-  /* Blue palette (oklch) */
-  --background: oklch(0.18 0.06 255);
-  --foreground: oklch(0.97 0.01 240);
-  --card: oklch(0.24 0.07 255);
-  --card-foreground: oklch(0.97 0.01 240);
-  --popover: oklch(0.24 0.07 255);
-  --popover-foreground: oklch(0.97 0.01 240);
+  /* Sky-blue palette (oklch) */
+  --background: oklch(0.22 0.05 210);
+  --foreground: oklch(0.97 0.01 220);
+  --card: oklch(0.28 0.06 210);
+  --card-foreground: oklch(0.97 0.01 220);
+  --popover: oklch(0.28 0.06 210);
+  --popover-foreground: oklch(0.97 0.01 220);
   --primary: oklch(1 0 0);
-  --primary-foreground: oklch(0.22 0.09 258);
-  --secondary: oklch(0.32 0.08 258);
-  --secondary-foreground: oklch(0.97 0.01 240);
-  --muted: oklch(0.3 0.06 258);
-  --muted-foreground: oklch(0.78 0.04 245);
-  --accent: oklch(0.78 0.16 235);
-  --accent-foreground: oklch(0.18 0.06 255);
+  --primary-foreground: oklch(0.22 0.08 210);
+  --secondary: oklch(0.35 0.07 210);
+  --secondary-foreground: oklch(0.97 0.01 220);
+  --muted: oklch(0.32 0.05 210);
+  --muted-foreground: oklch(0.78 0.04 220);
+  --accent: oklch(0.78 0.14 210);
+  --accent-foreground: oklch(0.18 0.05 210);
   --destructive: oklch(0.7 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.85 0.05 240);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.85 0.05 210);
 
-  /* Gradient stops */
-  --blue-1: oklch(0.16 0.07 255);
-  --blue-2: oklch(0.24 0.12 258);
-  --blue-3: oklch(0.32 0.16 250);
-  --blue-4: oklch(0.42 0.18 235);
+  /* Gradient stops — sky blue, lighter in centre */
+  --sky-1: oklch(0.18 0.06 210);
+  --sky-2: oklch(0.26 0.09 210);
+  --sky-3: oklch(0.38 0.12 210);
+  --sky-4: oklch(0.52 0.14 210);
 }
 
 .dark {
-  --background: oklch(0.14 0.06 258);
-  --foreground: oklch(0.97 0.01 240);
+  --background: oklch(0.16 0.05 210);
+  --foreground: oklch(0.97 0.01 220);
 }
 
 @layer base {
@@ -81,15 +81,20 @@
 }
 
 /* ============================================================
-   Textured blue gradient background
+   Textured sky-blue gradient background — light from sides to centre
    ============================================================ */
 .teardown-bg {
   position: relative;
   background:
-    radial-gradient(circle at 15% 10%, color-mix(in oklab, var(--blue-4) 65%, transparent), transparent 55%),
-    radial-gradient(circle at 85% 90%, color-mix(in oklab, var(--blue-3) 70%, transparent), transparent 55%),
-    radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--blue-2) 55%, transparent), transparent 70%),
-    linear-gradient(140deg, var(--blue-1), var(--blue-2) 45%, var(--blue-3) 100%);
+    /* centre glow — lighter */
+    radial-gradient(ellipse at 50% 45%, color-mix(in oklab, var(--sky-4) 70%, transparent), transparent 60%),
+    /* side vignettes — darker */
+    radial-gradient(ellipse at 0% 50%, var(--sky-1), transparent 50%),
+    radial-gradient(ellipse at 100% 50%, var(--sky-1), transparent 50%),
+    radial-gradient(ellipse at 50% 0%, var(--sky-1), transparent 45%),
+    radial-gradient(ellipse at 50% 100%, var(--sky-1), transparent 45%),
+    /* base sweep */
+    linear-gradient(160deg, var(--sky-1), var(--sky-2) 40%, var(--sky-3) 100%);
   isolation: isolate;
 }
 .teardown-bg::before {
@@ -98,9 +103,9 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  /* SVG noise / grain texture */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
-  opacity: 0.18;
+  /* SVG noise / grain texture — heavier */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+  opacity: 0.35;
   mix-blend-mode: overlay;
 }
 .teardown-bg::after {
@@ -110,8 +115,8 @@
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, oklch(1 0 0 / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(1 0 0 / 0.05) 1px, transparent 1px);
+    linear-gradient(to right, oklch(1 0 0 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
 }
@@ -122,7 +127,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: oklch(0.92 0.08 230);
+  color: oklch(0.92 0.08 210);
 }
 .display-h1 {
   font-family: var(--font-display);
@@ -133,7 +138,7 @@
   color: var(--color-foreground);
 }
 .text-gradient-blue {
-  background: linear-gradient(120deg, oklch(0.92 0.12 230), oklch(0.78 0.18 245), oklch(0.68 0.2 260));
+  background: linear-gradient(120deg, oklch(0.94 0.1 210), oklch(0.82 0.16 215), oklch(0.72 0.18 220));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -141,7 +146,7 @@
 .mono-sub {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: oklch(0.82 0.04 240);
+  color: oklch(0.82 0.04 215);
   line-height: 1.6;
 }
 
@@ -164,7 +169,7 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: oklch(0.78 0.04 240);
+  color: oklch(0.78 0.04 215);
   margin-bottom: 0.5rem;
 }
 .field-input {
@@ -180,9 +185,9 @@
   transition: border-color 0.2s, background 0.2s;
   appearance: none;
 }
-.field-input::placeholder { color: oklch(0.7 0.03 240); }
+.field-input::placeholder { color: oklch(0.7 0.03 215); }
 .field-input:focus {
-  border-color: oklch(0.85 0.1 235);
+  border-color: oklch(0.85 0.1 210);
   background: oklch(1 0 0 / 0.08);
 }
 .field-select {
@@ -192,7 +197,7 @@
   background-position: right 1rem center;
   padding-right: 2.5rem;
 }
-.field-select option { background: #18223a; color: #f0f4ff; }
+.field-select option { background: #1a2a3a; color: #f0f8ff; }
 
 /* Chips */
 .chip {
@@ -203,7 +208,7 @@
   padding: 5px 12px;
   border-radius: 99px;
   border: 1px solid oklch(1 0 0 / 0.14);
-  color: oklch(0.85 0.03 240);
+  color: oklch(0.85 0.03 215);
   background: oklch(1 0 0 / 0.04);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
@@ -211,7 +216,7 @@
 .chip:hover { color: #fff; border-color: oklch(1 0 0 / 0.35); }
 .chip-active {
   background: #fff;
-  color: oklch(0.22 0.09 258);
+  color: oklch(0.22 0.08 210);
   border-color: #fff;
 }
 
@@ -228,7 +233,7 @@
   justify-content: center;
   gap: 8px;
   background: #ffffff;
-  color: oklch(0.22 0.09 258);
+  color: oklch(0.22 0.08 210);
   font-family: var(--font-display);
   font-weight: 700;
   border: 1px solid #ffffff;
@@ -260,13 +265,13 @@
   border-radius: 50%;
   transform: scale(0);
   pointer-events: none;
-  background: radial-gradient(circle, oklch(0.55 0.18 255 / 0.55) 0%, oklch(0.55 0.18 255 / 0) 70%);
+  background: radial-gradient(circle, oklch(0.55 0.18 210 / 0.55) 0%, oklch(0.55 0.18 210 / 0) 70%);
   animation: splash 0.6s ease-out forwards;
   z-index: 0;
 }
 .btn-white .splash-ripple,
 .btn-white-sm .splash-ripple {
-  background: radial-gradient(circle, oklch(0.55 0.2 255 / 0.45) 0%, oklch(0.55 0.2 255 / 0) 70%);
+  background: radial-gradient(circle, oklch(0.55 0.2 210 / 0.45) 0%, oklch(0.55 0.2 210 / 0) 70%);
 }
 .chip .splash-ripple {
   background: radial-gradient(circle, oklch(1 0 0 / 0.45) 0%, oklch(1 0 0 / 0) 70%);
@@ -293,7 +298,7 @@
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: oklch(0.9 0.1 230);
+  color: oklch(0.9 0.1 210);
 }
 
 /* Output post */
@@ -303,7 +308,7 @@
   font-weight: 300;
   line-height: 1.85;
   min-height: 200px;
-  color: oklch(0.96 0.01 240);
+  color: oklch(0.96 0.01 220);
 }
 
 /* Insights */
@@ -330,12 +335,12 @@
 }
 .insight-good .insight-label { color: oklch(0.85 0.12 200); }
 .insight-improve .insight-label { color: oklch(0.85 0.14 30); }
-.insight-content { font-size: 13px; line-height: 1.6; color: oklch(0.95 0.01 240); }
+.insight-content { font-size: 13px; line-height: 1.6; color: oklch(0.95 0.01 220); }
 
 .reset-btn {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: oklch(0.8 0.04 240);
+  color: oklch(0.8 0.04 215);
   background: none;
   border: none;
   cursor: pointer;
