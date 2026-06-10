@@ -335,12 +335,12 @@
 }
 .insight-good .insight-label { color: oklch(0.85 0.12 200); }
 .insight-improve .insight-label { color: oklch(0.85 0.14 30); }
-.insight-content { font-size: 13px; line-height: 1.6; color: oklch(0.95 0.01 240); }
+.insight-content { font-size: 13px; line-height: 1.6; color: oklch(0.95 0.01 220); }
 
 .reset-btn {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: oklch(0.8 0.04 240);
+  color: oklch(0.8 0.04 215);
   background: none;
   border: none;
   cursor: pointer;
