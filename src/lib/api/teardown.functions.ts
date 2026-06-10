@@ -14,8 +14,9 @@ export const generateTeardown = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       appName: z.string().min(1),
+      productUrl: z.string().optional().default(""),
       focus: z.string().min(1),
-      observation: z.string().optional().default(""),
+      notes: z.string().optional().default(""),
     }),
   )
   .handler(async ({ data }) => {
