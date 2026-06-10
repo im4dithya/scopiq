@@ -169,7 +169,7 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: oklch(0.78 0.04 240);
+  color: oklch(0.78 0.04 215);
   margin-bottom: 0.5rem;
 }
 .field-input {
