@@ -13,10 +13,18 @@ const focusLabels: Record<string, string> = {
 export const generateTeardown = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      appName: z.string().min(1),
-      productUrl: z.string().optional().default(""),
-      focus: z.string().min(1),
-      notes: z.string().optional().default(""),
+      appName: z.string().trim().min(1).max(100),
+      productUrl: z
+        .string()
+        .trim()
+        .max(500)
+        .refine((v) => v === "" || /^https?:\/\/.+/i.test(v), {
+          message: "Must be a valid http(s) URL",
+        })
+        .optional()
+        .default(""),
+      focus: z.string().min(1).max(50),
+      notes: z.string().trim().max(1000).optional().default(""),
     }),
   )
   .handler(async ({ data }) => {
