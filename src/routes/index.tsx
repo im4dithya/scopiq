@@ -124,7 +124,7 @@ function Index() {
         data: {
           appName: appName.trim(),
           productUrl: productUrl.trim(),
-          focus,
+          focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
         },
       });
