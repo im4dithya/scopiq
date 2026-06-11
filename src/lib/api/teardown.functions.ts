@@ -23,7 +23,14 @@ export const generateTeardown = createServerFn({ method: "POST" })
         })
         .optional()
         .default(""),
-      focus: z.string().min(1).max(50),
+      focus: z.enum([
+        "overall",
+        "onboarding",
+        "retention",
+        "ux",
+        "notifications",
+        "monetization",
+      ]),
       notes: z.string().trim().max(1000).optional().default(""),
     }),
   )
