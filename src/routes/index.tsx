@@ -244,7 +244,7 @@ function Index() {
             Generator
           </h1>
           <p className="mono-sub mt-3">
-            Pick an app → get a LinkedIn-ready product analysis post.
+            Enter a product name or link → get a LinkedIn-ready product analysis post.
           </p>
         </header>
 
