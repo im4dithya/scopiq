@@ -65,9 +65,23 @@ GOOD: [something done well]
 IMPROVE: [something to improve]
 IMPROVE: [something to improve]
 
-Keep the insights crisp and specific to the app.`;
+Keep the insights crisp and specific to the app.
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${data.appName}, focusing on the ${focusLabel}.${data.productUrl ? ` Product URL: ${data.productUrl}` : ""}${data.notes ? ` The student noted: "${data.notes}"` : ""} Make it feel authentic and student-perspective.`;
+If an image/screenshot is provided in the input payload, you must actively inspect its visual design execution (including layout hierarchy, typography, padding, color usage, and interface friction points). Seamlessly weave these specific visual teardown observations into your final LinkedIn post analysis.`;
+
+    const userPrompt = `Generate a LinkedIn product teardown post about ${data.appName}, focusing on the ${focusLabel}.${data.productUrl ? ` Product URL: ${data.productUrl}` : ""}${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.`;
+
+    const userContent: unknown = data.screenshot
+      ? [
+          { type: "text", text: userPrompt },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${data.screenshot.mediaType};base64,${data.screenshot.data}`,
+            },
+          },
+        ]
+      : userPrompt;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -79,7 +93,7 @@ Keep the insights crisp and specific to the app.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
       }),
     });
