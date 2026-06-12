@@ -46,6 +46,27 @@ export const generateTeardown = createServerFn({ method: "POST" })
 
     const focusLabel = focusLabels[data.focus] ?? "overall product experience";
 
+    // Detect if appName is itself a URL and derive a clean display name.
+    const rawInput = data.appName.trim();
+    const looksLikeUrl =
+      /^https?:\/\//i.test(rawInput) || /\.(com|app|io|co|net|org|dev|ai|xyz)(\/|$)/i.test(rawInput);
+    let cleanedProductName = rawInput;
+    let detectedUrl = data.productUrl?.trim() || "";
+    if (looksLikeUrl) {
+      try {
+        const withProto = /^https?:\/\//i.test(rawInput) ? rawInput : `https://${rawInput}`;
+        const u = new URL(withProto);
+        if (!detectedUrl) detectedUrl = withProto;
+        const host = u.hostname.replace(/^www\./i, "");
+        const core = host.split(".")[0] ?? host;
+        cleanedProductName = core.charAt(0).toUpperCase() + core.slice(1);
+      } catch {
+        // fall back to raw input
+      }
+    }
+
+    const isWebProduct = Boolean(detectedUrl) || looksLikeUrl;
+
     const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence. Generate a LinkedIn post that performs a product teardown analysis. The post should:
 - Sound like a sharp, curious CS student who is learning PM/PD, not a senior executive
 - Be casual and conversational but insightful
@@ -65,11 +86,19 @@ GOOD: [something done well]
 IMPROVE: [something to improve]
 IMPROVE: [something to improve]
 
-Keep the insights crisp and specific to the app.
+Keep the insights crisp and specific to the product.
+
+Detect if the target product is a website/web application (based on a provided URL link or desktop website screenshot) vs a traditional mobile application.
+
+If it is a website/web application, pivot your product vocabulary away from mobile-only metrics (like app store onboarding, push notifications, app downloads) and instead analyze web design paradigms: layout grids, desktop visual hierarchy, call-to-action (CTA) positioning, landing page conversions, or web app responsiveness.
 
 If an image/screenshot is provided in the input payload, you must actively inspect its visual design execution (including layout hierarchy, typography, padding, color usage, and interface friction points). Seamlessly weave these specific visual teardown observations into your final LinkedIn post analysis.`;
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${data.appName}, focusing on the ${focusLabel}.${data.productUrl ? ` Product URL: ${data.productUrl}` : ""}${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.`;
+    const productContext = isWebProduct
+      ? `the web product ${cleanedProductName}${detectedUrl ? ` (${detectedUrl})` : ""}`
+      : cleanedProductName;
+
+    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.`;
 
     const userContent: unknown = data.screenshot
       ? [
