@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useRef, type MouseEvent } from "react";
+import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } from "react";
+import { ImageUp, X } from "lucide-react";
+import { toast } from "sonner";
 import { generateTeardown } from "@/lib/api/teardown.functions";
 
 export const Route = createFileRoute("/")({
@@ -85,9 +87,84 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  type ScreenshotState = {
+    file: File;
+    previewUrl: string;
+    base64: string;
+    mediaType: "image/png" | "image/jpeg" | "image/webp";
+  };
+  const [screenshot, setScreenshot] = useState<ScreenshotState | null>(null);
+  const [screenshotProcessing, setScreenshotProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   function pickChip(name: string) {
     setAppName(name);
     setActiveChip(name);
+  }
+
+  function clearScreenshot() {
+    if (screenshot) URL.revokeObjectURL(screenshot.previewUrl);
+    setScreenshot(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function formatBytes(b: number) {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFile(file: File) {
+    const allowed = ["image/png", "image/jpeg", "image/webp"] as const;
+    if (!allowed.includes(file.type as (typeof allowed)[number])) {
+      toast.error("Unsupported file type. Use PNG, JPG, or WEBP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large. Max 5MB.");
+      return;
+    }
+    if (screenshot) URL.revokeObjectURL(screenshot.previewUrl);
+    setScreenshotProcessing(true);
+    try {
+      const base64 = await fileToBase64(file);
+      setScreenshot({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        base64,
+        mediaType: file.type as ScreenshotState["mediaType"],
+      });
+    } catch {
+      toast.error("Could not read that image. Try another file.");
+    } finally {
+      setScreenshotProcessing(false);
+    }
+  }
+
+  function onFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) void handleFile(f);
+  }
+
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) void handleFile(f);
   }
 
   function reset() {
@@ -99,12 +176,17 @@ function Index() {
     setFocus("overall");
     setActiveChip(null);
     setError(null);
+    clearScreenshot();
   }
 
   async function handleGenerate(e: MouseEvent<HTMLButtonElement>) {
     ripple(e);
     if (!appName.trim()) {
       setError("Please enter an app name first.");
+      return;
+    }
+    if (screenshotProcessing) {
+      setError("Hold on — the screenshot is still being processed.");
       return;
     }
     setError(null);
@@ -126,6 +208,9 @@ function Index() {
           productUrl: productUrl.trim(),
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
+          screenshot: screenshot
+            ? { data: screenshot.base64, mediaType: screenshot.mediaType }
+            : undefined,
         },
       });
       setPost(result.post);
@@ -220,7 +305,7 @@ function Index() {
               />
             </div>
 
-            <div className="mb-2">
+            <div className="mb-5">
               <label className="field-label">Notes (optional)</label>
               <textarea
                 value={notes}
@@ -230,10 +315,66 @@ function Index() {
               />
             </div>
 
+            <div className="mb-2">
+              <label className="field-label">Upload Screenshot (Optional)</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={onFileInputChange}
+                className="hidden"
+              />
+              {!screenshot ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  className={`dropzone ${isDragging ? "dropzone-active" : ""}`}
+                >
+                  <span className="dropzone-icon">
+                    <ImageUp size={18} />
+                  </span>
+                  <span className="dropzone-title">
+                    {screenshotProcessing
+                      ? "Processing image…"
+                      : "Drag & drop a screenshot here, or click to browse"}
+                  </span>
+                  <span className="dropzone-caption">Supports PNG, JPG, WEBP (Max 5MB)</span>
+                </div>
+              ) : (
+                <div className="dropzone-preview">
+                  <img src={screenshot.previewUrl} alt="Screenshot preview" />
+                  <div className="dropzone-preview-meta">
+                    <div className="dropzone-preview-name">{screenshot.file.name}</div>
+                    <div className="dropzone-preview-size">
+                      {formatBytes(screenshot.file.size)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearScreenshot}
+                    aria-label="Remove screenshot"
+                    className="dropzone-remove"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={loading}
+              disabled={loading || screenshotProcessing}
               className="btn-white mt-6 w-full"
             >
               <svg
@@ -248,7 +389,11 @@ function Index() {
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              {loading ? "Generating…" : "Generate teardown post"}
+              {loading
+                ? "Generating…"
+                : screenshotProcessing
+                  ? "Processing image…"
+                  : "Generate teardown post"}
             </button>
 
             {error && <div className="error-box mt-4">{error}</div>}
