@@ -182,7 +182,7 @@ function Index() {
   async function handleGenerate(e: MouseEvent<HTMLButtonElement>) {
     ripple(e);
     if (!appName.trim()) {
-      setError("Please enter an app name first.");
+      setError("Please enter a product name or URL first.");
       return;
     }
     if (screenshotProcessing) {
@@ -244,14 +244,14 @@ function Index() {
             Generator
           </h1>
           <p className="mono-sub mt-3">
-            Pick an app → get a LinkedIn-ready product analysis post.
+            Enter a product name or link → get a LinkedIn-ready product analysis post.
           </p>
         </header>
 
         {!post && (
           <section className="glass-card p-6">
             <div className="mb-5">
-              <label className="field-label">App name</label>
+              <label className="field-label">Product Name or Website URL</label>
               <input
                 type="text"
                 value={appName}
@@ -259,7 +259,7 @@ function Index() {
                   setAppName(e.target.value);
                   setActiveChip(null);
                 }}
-                placeholder="e.g. Spotify, Swiggy, Instagram, Notion..."
+                placeholder="e.g., Spotify, https://linear.app, Notion..."
                 className="field-input"
               />
               <div className="mt-3 flex flex-wrap gap-2">
