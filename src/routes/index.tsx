@@ -87,9 +87,84 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  type ScreenshotState = {
+    file: File;
+    previewUrl: string;
+    base64: string;
+    mediaType: "image/png" | "image/jpeg" | "image/webp";
+  };
+  const [screenshot, setScreenshot] = useState<ScreenshotState | null>(null);
+  const [screenshotProcessing, setScreenshotProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   function pickChip(name: string) {
     setAppName(name);
     setActiveChip(name);
+  }
+
+  function clearScreenshot() {
+    if (screenshot) URL.revokeObjectURL(screenshot.previewUrl);
+    setScreenshot(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function formatBytes(b: number) {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFile(file: File) {
+    const allowed = ["image/png", "image/jpeg", "image/webp"] as const;
+    if (!allowed.includes(file.type as (typeof allowed)[number])) {
+      toast.error("Unsupported file type. Use PNG, JPG, or WEBP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large. Max 5MB.");
+      return;
+    }
+    if (screenshot) URL.revokeObjectURL(screenshot.previewUrl);
+    setScreenshotProcessing(true);
+    try {
+      const base64 = await fileToBase64(file);
+      setScreenshot({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        base64,
+        mediaType: file.type as ScreenshotState["mediaType"],
+      });
+    } catch {
+      toast.error("Could not read that image. Try another file.");
+    } finally {
+      setScreenshotProcessing(false);
+    }
+  }
+
+  function onFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) void handleFile(f);
+  }
+
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) void handleFile(f);
   }
 
   function reset() {
@@ -101,6 +176,7 @@ function Index() {
     setFocus("overall");
     setActiveChip(null);
     setError(null);
+    clearScreenshot();
   }
 
   async function handleGenerate(e: MouseEvent<HTMLButtonElement>) {
