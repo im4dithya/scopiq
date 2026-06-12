@@ -18,6 +18,9 @@ export const generateTeardown = createServerFn({ method: "POST" })
         .string()
         .trim()
         .max(500)
+        .refine((v) => v === "" || /^https?:\/\/.+/i.test(v), {
+          message: "Must be a valid http(s) URL",
+        })
         .optional()
         .default(""),
       focus: z.enum([
