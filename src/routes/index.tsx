@@ -305,7 +305,7 @@ function Index() {
               />
             </div>
 
-            <div className="mb-2">
+            <div className="mb-5">
               <label className="field-label">Notes (optional)</label>
               <textarea
                 value={notes}
@@ -315,10 +315,66 @@ function Index() {
               />
             </div>
 
+            <div className="mb-2">
+              <label className="field-label">Upload Screenshot (Optional)</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={onFileInputChange}
+                className="hidden"
+              />
+              {!screenshot ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  className={`dropzone ${isDragging ? "dropzone-active" : ""}`}
+                >
+                  <span className="dropzone-icon">
+                    <ImageUp size={18} />
+                  </span>
+                  <span className="dropzone-title">
+                    {screenshotProcessing
+                      ? "Processing image…"
+                      : "Drag & drop a screenshot here, or click to browse"}
+                  </span>
+                  <span className="dropzone-caption">Supports PNG, JPG, WEBP (Max 5MB)</span>
+                </div>
+              ) : (
+                <div className="dropzone-preview">
+                  <img src={screenshot.previewUrl} alt="Screenshot preview" />
+                  <div className="dropzone-preview-meta">
+                    <div className="dropzone-preview-name">{screenshot.file.name}</div>
+                    <div className="dropzone-preview-size">
+                      {formatBytes(screenshot.file.size)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearScreenshot}
+                    aria-label="Remove screenshot"
+                    className="dropzone-remove"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={loading}
+              disabled={loading || screenshotProcessing}
               className="btn-white mt-6 w-full"
             >
               <svg
@@ -333,7 +389,11 @@ function Index() {
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              {loading ? "Generating…" : "Generate teardown post"}
+              {loading
+                ? "Generating…"
+                : screenshotProcessing
+                  ? "Processing image…"
+                  : "Generate teardown post"}
             </button>
 
             {error && <div className="error-box mt-4">{error}</div>}
