@@ -182,7 +182,7 @@ function Index() {
   async function handleGenerate(e: MouseEvent<HTMLButtonElement>) {
     ripple(e);
     if (!appName.trim()) {
-      setError("Please enter an app name first.");
+      setError("Please enter a product name or URL first.");
       return;
     }
     if (screenshotProcessing) {
