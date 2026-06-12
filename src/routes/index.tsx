@@ -251,7 +251,7 @@ function Index() {
         {!post && (
           <section className="glass-card p-6">
             <div className="mb-5">
-              <label className="field-label">App name</label>
+              <label className="field-label">Product Name or Website URL</label>
               <input
                 type="text"
                 value={appName}
@@ -259,7 +259,7 @@ function Index() {
                   setAppName(e.target.value);
                   setActiveChip(null);
                 }}
-                placeholder="e.g. Spotify, Swiggy, Instagram, Notion..."
+                placeholder="e.g., Spotify, https://linear.app, Notion..."
                 className="field-input"
               />
               <div className="mt-3 flex flex-wrap gap-2">
