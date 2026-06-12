@@ -185,6 +185,10 @@ function Index() {
       setError("Please enter an app name first.");
       return;
     }
+    if (screenshotProcessing) {
+      setError("Hold on — the screenshot is still being processed.");
+      return;
+    }
     setError(null);
     setLoading(true);
     setPost(null);
