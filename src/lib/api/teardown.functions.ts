@@ -32,6 +32,12 @@ export const generateTeardown = createServerFn({ method: "POST" })
         "monetization",
       ]),
       notes: z.string().trim().max(1000).optional().default(""),
+      screenshot: z
+        .object({
+          data: z.string().min(1).max(7_500_000),
+          mediaType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+        })
+        .optional(),
     }),
   )
   .handler(async ({ data }) => {
