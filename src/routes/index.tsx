@@ -239,7 +239,7 @@ function Index() {
           <h1 className="display-h1 mt-3">
             Product
             <br />
-            <span className="text-gradient-blue">Teardown</span>
+            <span className="text-gradient-gold">Teardown</span>
             <br />
             Generator
           </h1>
