@@ -210,6 +210,7 @@ function Index() {
           productUrl: productUrl.trim(),
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
+          appStoreId: appStoreId.trim(),
           screenshot: screenshot
             ? { data: screenshot.base64, mediaType: screenshot.mediaType }
             : undefined,
