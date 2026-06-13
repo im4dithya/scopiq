@@ -172,6 +172,7 @@ function Index() {
     setPost(null);
     setInsights([]);
     setAppName("");
+    setAppStoreId("");
     setProductUrl("");
     setNotes("");
     setFocus("overall");
