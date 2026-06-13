@@ -196,7 +196,23 @@ If an image/screenshot is provided in the input payload, you must actively inspe
       ? `the web product ${cleanedProductName}${detectedUrl ? ` (${detectedUrl})` : ""}`
       : cleanedProductName;
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.`;
+    // Fetch live App Store reviews when an ID/URL is provided; otherwise
+    // fall back to a realistic illustrative set so the AI still has user
+    // pain points to anchor on.
+    const parsedAppId = parseAppStoreId(data.appStoreId ?? "");
+    let reviews: Review[] = [];
+    let reviewSource: "live" | "sample" = "sample";
+    if (parsedAppId) {
+      reviews = await fetchAppStoreReviews(parsedAppId);
+      if (reviews.length > 0) reviewSource = "live";
+    }
+    if (reviews.length === 0) {
+      reviews = fallbackReviews(cleanedProductName, data.focus);
+      reviewSource = "sample";
+    }
+    const reviewsBlock = formatReviewsBlock(reviews, reviewSource);
+
+    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.${reviewsBlock}`;
 
     const userContent: unknown = data.screenshot
       ? [
@@ -209,6 +225,7 @@ If an image/screenshot is provided in the input payload, you must actively inspe
           },
         ]
       : userPrompt;
+
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
