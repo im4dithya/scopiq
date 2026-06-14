@@ -298,16 +298,8 @@ function Index() {
               </select>
             </div>
 
-            <div className="mb-5">
-              <label className="field-label">Product URL (optional)</label>
-              <input
-                type="url"
-                value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
-                placeholder="https://..."
-                className="field-input"
-              />
-            </div>
+
+
 
             <div className="mb-5">
               <label className="field-label">Notes (optional)</label>
