@@ -201,13 +201,14 @@ function Index() {
     }, 1800);
 
     try {
+      const parsed = analyzeOmniInput(appName);
       const result = await generate({
         data: {
-          appName: appName.trim(),
-          productUrl: productUrl.trim(),
+          appName: parsed.cleanedName || appName.trim(),
+          productUrl: parsed.originalUrl,
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
-          appStoreId: appStoreId.trim(),
+          appStoreId: parsed.appStoreId,
           screenshot: screenshot
             ? { data: screenshot.base64, mediaType: screenshot.mediaType }
             : undefined,
