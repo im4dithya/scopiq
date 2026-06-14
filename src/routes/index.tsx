@@ -4,6 +4,7 @@ import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } f
 import { ImageUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { generateTeardown } from "@/lib/api/teardown.functions";
+import { analyzeOmniInput } from "@/lib/omni-input";
 
 export const Route = createFileRoute("/")({
   head: () => ({
