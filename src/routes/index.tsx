@@ -260,7 +260,7 @@ function Index() {
                   setAppName(e.target.value);
                   setActiveChip(null);
                 }}
-                placeholder="e.g., Spotify, https://linear.app, Notion..."
+                placeholder="e.g., Spotify, https://linear.app, or an Apple App Store link..."
                 className="field-input"
               />
               <div className="mt-3 flex flex-wrap gap-2">
