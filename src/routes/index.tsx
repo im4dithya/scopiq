@@ -4,6 +4,7 @@ import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } f
 import { ImageUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { generateTeardown } from "@/lib/api/teardown.functions";
+import { analyzeOmniInput } from "@/lib/omni-input";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -74,8 +75,6 @@ function Index() {
   const ripple = useRipple();
 
   const [appName, setAppName] = useState("");
-  const [appStoreId, setAppStoreId] = useState("");
-  const [productUrl, setProductUrl] = useState("");
   const [focus, setFocus] = useState("overall");
   const [notes, setNotes] = useState("");
   const [activeChip, setActiveChip] = useState<string | null>(null);
@@ -172,8 +171,6 @@ function Index() {
     setPost(null);
     setInsights([]);
     setAppName("");
-    setAppStoreId("");
-    setProductUrl("");
     setNotes("");
     setFocus("overall");
     setActiveChip(null);
@@ -204,13 +201,14 @@ function Index() {
     }, 1800);
 
     try {
+      const parsed = analyzeOmniInput(appName);
       const result = await generate({
         data: {
-          appName: appName.trim(),
-          productUrl: productUrl.trim(),
+          appName: parsed.cleanedName || appName.trim(),
+          productUrl: parsed.originalUrl,
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
-          appStoreId: appStoreId.trim(),
+          appStoreId: parsed.appStoreId,
           screenshot: screenshot
             ? { data: screenshot.base64, mediaType: screenshot.mediaType }
             : undefined,
@@ -254,7 +252,7 @@ function Index() {
         {!post && (
           <section className="glass-card p-6">
             <div className="mb-5">
-              <label className="field-label">Product Name or Website URL</label>
+              <label className="field-label">Product Name, Website, or App Store Link</label>
               <input
                 type="text"
                 value={appName}
@@ -262,7 +260,7 @@ function Index() {
                   setAppName(e.target.value);
                   setActiveChip(null);
                 }}
-                placeholder="e.g., Spotify, https://linear.app, Notion..."
+                placeholder="e.g., Spotify, https://linear.app, or an Apple App Store link..."
                 className="field-input"
               />
               <div className="mt-3 flex flex-wrap gap-2">
@@ -282,19 +280,8 @@ function Index() {
               </div>
             </div>
 
-            <div className="mb-5">
-              <label className="field-label">App Store ID or URL (optional)</label>
-              <input
-                type="text"
-                value={appStoreId}
-                onChange={(e) => setAppStoreId(e.target.value)}
-                placeholder="e.g., 324684580 or https://apps.apple.com/.../id324684580"
-                className="field-input"
-              />
-              <p className="mono-sub mt-2" style={{ fontSize: 11.5 }}>
-                If provided, recent App Store reviews are pulled in as real user evidence.
-              </p>
-            </div>
+
+
 
             <div className="mb-5">
               <label className="field-label">Focus area</label>
@@ -311,16 +298,8 @@ function Index() {
               </select>
             </div>
 
-            <div className="mb-5">
-              <label className="field-label">Product URL (optional)</label>
-              <input
-                type="url"
-                value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
-                placeholder="https://..."
-                className="field-input"
-              />
-            </div>
+
+
 
             <div className="mb-5">
               <label className="field-label">Notes (optional)</label>
