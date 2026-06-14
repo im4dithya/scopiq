@@ -252,7 +252,7 @@ function Index() {
         {!post && (
           <section className="glass-card p-6">
             <div className="mb-5">
-              <label className="field-label">Product Name or Website URL</label>
+              <label className="field-label">Product Name, Website, or App Store Link</label>
               <input
                 type="text"
                 value={appName}
