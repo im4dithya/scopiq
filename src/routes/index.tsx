@@ -280,19 +280,8 @@ function Index() {
               </div>
             </div>
 
-            <div className="mb-5">
-              <label className="field-label">App Store ID or URL (optional)</label>
-              <input
-                type="text"
-                value={appStoreId}
-                onChange={(e) => setAppStoreId(e.target.value)}
-                placeholder="e.g., 324684580 or https://apps.apple.com/.../id324684580"
-                className="field-input"
-              />
-              <p className="mono-sub mt-2" style={{ fontSize: 11.5 }}>
-                If provided, recent App Store reviews are pulled in as real user evidence.
-              </p>
-            </div>
+
+
 
             <div className="mb-5">
               <label className="field-label">Focus area</label>
