@@ -493,3 +493,82 @@
   border-color: rgba(194, 90, 58, 0.6);
   color: #fff;
 }
+
+/* ============================================================
+   AI Co-PM — Voice button + PRD markdown output
+   ============================================================ */
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 161, 92, 0.28);
+  background: rgba(20, 20, 20, 0.6);
+  color: var(--champagne);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+.voice-btn:hover {
+  border-color: rgba(255, 184, 102, 0.55);
+  color: #fff;
+}
+.voice-btn-active {
+  border-color: rgba(255, 184, 102, 0.8);
+  color: #0a0a0a;
+  background: linear-gradient(135deg, #ffb866, #e6a15c);
+  animation: voicePulse 1.4s ease-in-out infinite;
+}
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 184, 102, 0.55); }
+  50%      { box-shadow: 0 0 0 14px rgba(255, 184, 102, 0); }
+}
+
+.prd-output {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  font-size: 15px;
+}
+.prd-output h1,
+.prd-output h2,
+.prd-output h3 {
+  font-family: var(--font-display);
+  background: linear-gradient(135deg, #ffb866 0%, #e6a15c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.01em;
+}
+.prd-output h1 { font-size: 28px; margin: 1.2em 0 0.5em; }
+.prd-output h2 { font-size: 23px; margin: 1.4em 0 0.5em; }
+.prd-output h3 {
+  font-size: 18px;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(230, 161, 92, 0.18);
+}
+.prd-output p { margin: 0.7em 0; color: #ede5d8; }
+.prd-output strong { color: #ffb866; font-weight: 600; }
+.prd-output ul, .prd-output ol { margin: 0.6em 0 0.9em 1.25em; }
+.prd-output li { margin: 0.35em 0; color: #ede5d8; }
+.prd-output li::marker { color: #e6a15c; }
+.prd-output code {
+  background: rgba(255, 184, 102, 0.1);
+  color: #ffd9a8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+.prd-output blockquote {
+  border-left: 2px solid #e6a15c;
+  padding-left: 14px;
+  margin: 1em 0;
+  color: #d4cfc9;
+  font-style: italic;
+}
