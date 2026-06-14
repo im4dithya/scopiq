@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CoPmRouteImport } from './routes/co-pm'
 import { Route as IndexRouteImport } from './routes/index'
 
+const CoPmRoute = CoPmRouteImport.update({
+  id: '/co-pm',
+  path: '/co-pm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/co-pm': typeof CoPmRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/co-pm': typeof CoPmRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/co-pm': typeof CoPmRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/co-pm'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/co-pm'
+  id: '__root__' | '/' | '/co-pm'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CoPmRoute: typeof CoPmRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/co-pm': {
+      id: '/co-pm'
+      path: '/co-pm'
+      fullPath: '/co-pm'
+      preLoaderRoute: typeof CoPmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CoPmRoute: CoPmRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
