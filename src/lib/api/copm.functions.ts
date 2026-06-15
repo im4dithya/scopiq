@@ -65,7 +65,8 @@ export const generatePRD = createServerFn({ method: "POST" })
       const txt = await res.text();
       if (res.status === 429) throw new Error("Rate limited — please retry shortly.");
       if (res.status === 402) throw new Error("AI credits exhausted. Add credits in workspace billing.");
-      throw new Error(`AI gateway error ${res.status}: ${txt}`);
+      console.error(`AI gateway error ${res.status}: ${txt}`);
+      throw new Error("AI generation failed. Please try again.");
     }
 
     const json = (await res.json()) as {
