@@ -1,0 +1,8 @@
+{
+  "$schema": "./security-policy.schema.json",
+  "_comment": "Controls which scan findings block CI. Override per-workspace/env with SECURITY_BLOCKING_LEVELS, SECURITY_BLOCKING_SCANNERS, SECURITY_DEPENDENCY_AUDIT_LEVEL, or SECURITY_STRICT.",
+  "blockingLevels": ["high", "critical", "error"],
+  "blockingScanners": ["connector_security_scan", "agent_security"],
+  "dependencyAuditLevel": "high",
+  "strict": true
+}
