@@ -43,12 +43,23 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Dependency vulnerability audit (high/critical)
-        run: bun audit --audit-level=high
+      - name: Resolve dependency audit level from policy
+        id: policy
+        run: |
+          LEVEL="${SECURITY_DEPENDENCY_AUDIT_LEVEL:-$(jq -r '.dependencyAuditLevel // "high"' security-policy.json 2>/dev/null || echo high)}"
+          echo "level=$LEVEL" >> "$GITHUB_OUTPUT"
+        env:
+          SECURITY_DEPENDENCY_AUDIT_LEVEL: ${{ vars.SECURITY_DEPENDENCY_AUDIT_LEVEL }}
+
+      - name: Dependency vulnerability audit
+        run: bun audit --audit-level=${{ steps.policy.outputs.level }}
 
       - name: Check for security findings
         env:
           LOVABLE_PROJECT_ID: ${{ secrets.LOVABLE_PROJECT_ID }}
           LOVABLE_API_KEY: ${{ secrets.LOVABLE_API_KEY }}
           LOVABLE_SECURITY_API_URL: ${{ secrets.LOVABLE_SECURITY_API_URL }}
+          SECURITY_BLOCKING_LEVELS: ${{ vars.SECURITY_BLOCKING_LEVELS }}
+          SECURITY_BLOCKING_SCANNERS: ${{ vars.SECURITY_BLOCKING_SCANNERS }}
+          SECURITY_STRICT: ${{ vars.SECURITY_STRICT }}
         run: bun run scripts/security-check.ts

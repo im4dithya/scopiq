@@ -12,9 +12,55 @@
 
 import { existsSync, readFileSync } from "fs";
 
-const BLOCKING_SCANNERS = ["connector_security_scan", "agent_security"];
-const BLOCKING_LEVELS = new Set(["high", "critical", "error"]);
 const RESULTS_FILE = "security-scan-results.json";
+const POLICY_FILE = process.env.SECURITY_POLICY_FILE ?? "security-policy.json";
+
+interface SecurityPolicy {
+  blockingLevels: string[];
+  blockingScanners: string[];
+  dependencyAuditLevel: string;
+  strict: boolean;
+}
+
+const DEFAULT_POLICY: SecurityPolicy = {
+  blockingLevels: ["high", "critical", "error"],
+  blockingScanners: ["connector_security_scan", "agent_security"],
+  dependencyAuditLevel: "high",
+  strict: true,
+};
+
+function parseList(v: string | undefined): string[] | null {
+  if (!v) return null;
+  return v.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function loadPolicy(): SecurityPolicy {
+  let p: SecurityPolicy = { ...DEFAULT_POLICY };
+  if (existsSync(POLICY_FILE)) {
+    try {
+      const raw = JSON.parse(readFileSync(POLICY_FILE, "utf-8")) as Partial<SecurityPolicy>;
+      p = { ...p, ...raw };
+      console.log(`→ Loaded policy from ${POLICY_FILE}`);
+    } catch (err) {
+      console.warn(`⚠️  Could not parse ${POLICY_FILE}: ${(err as Error).message}`);
+    }
+  }
+  // Env var overrides (workspace/environment-level)
+  const lvl = parseList(process.env.SECURITY_BLOCKING_LEVELS);
+  if (lvl) p.blockingLevels = lvl;
+  const sc = parseList(process.env.SECURITY_BLOCKING_SCANNERS);
+  if (sc) p.blockingScanners = sc;
+  if (process.env.SECURITY_DEPENDENCY_AUDIT_LEVEL)
+    p.dependencyAuditLevel = process.env.SECURITY_DEPENDENCY_AUDIT_LEVEL;
+  if (process.env.SECURITY_STRICT != null)
+    p.strict = process.env.SECURITY_STRICT !== "false";
+  p.blockingLevels = p.blockingLevels.map((s) => s.toLowerCase());
+  return p;
+}
+
+const POLICY = loadPolicy();
+const BLOCKING_SCANNERS = POLICY.blockingScanners;
+const BLOCKING_LEVELS = new Set(POLICY.blockingLevels);
 
 interface SecurityFinding {
   internal_id: string;
@@ -169,7 +215,7 @@ async function main() {
 
   // 3. Nothing available — fail closed unless overridden
   if (!results) {
-    const strict = process.env.SECURITY_STRICT !== "false";
+    const strict = POLICY.strict;
     if (strict) {
       console.error("\n✖ No security scan data available.");
       console.error(
