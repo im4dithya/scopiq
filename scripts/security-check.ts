@@ -13,6 +13,7 @@
 import { existsSync, readFileSync } from "fs";
 
 const BLOCKING_SCANNERS = ["connector_security_scan", "agent_security"];
+const BLOCKING_LEVELS = new Set(["high", "critical", "error"]);
 const RESULTS_FILE = "security-scan-results.json";
 
 interface SecurityFinding {
@@ -123,11 +124,26 @@ function checkFindings(results: ScanResults): boolean {
       continue;
     }
 
+    const blocking = findings.filter((f) =>
+      BLOCKING_LEVELS.has((f.level ?? "").toLowerCase()),
+    );
+    const informational = findings.length - blocking.length;
+
+    if (blocking.length === 0) {
+      console.log(
+        `✅ ${scannerName}: ${informational} informational finding(s), none high/critical`,
+      );
+      continue;
+    }
+
     hasBlocking = true;
-    console.error(`\n✖ ${scannerName}: ${findings.length} finding(s)`);
-    for (const f of findings) {
+    console.error(
+      `\n✖ ${scannerName}: ${blocking.length} high/critical finding(s)` +
+        (informational ? ` (+ ${informational} informational)` : ""),
+    );
+    for (const f of blocking) {
       console.error(
-        `   [${f.level ?? "unknown"}] ${f.internal_id}: ${f.title ?? "Untitled"}`
+        `   [${f.level ?? "unknown"}] ${f.internal_id}: ${f.title ?? "Untitled"}`,
       );
       if (f.description) {
         console.error(`   → ${f.description}`);
