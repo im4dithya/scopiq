@@ -185,8 +185,17 @@ export function TeardownView() {
             : undefined,
         },
       });
-      setPost(result.post);
-      setInsights(result.insights);
+      if (result.status === "invalid") {
+        toast.warning(
+          result.message ||
+            "We couldn't recognize that as a real product, app, or website. Please try again with a valid name.",
+        );
+        setPost(null);
+        setInsights([]);
+      } else {
+        setPost(result.post);
+        setInsights(result.insights);
+      }
     } catch {
       setError("Something went wrong. Please try again in a moment.");
     } finally {
