@@ -215,7 +215,7 @@ async function main() {
 
   // 3. Nothing available — fail closed unless overridden
   if (!results) {
-    const strict = process.env.SECURITY_STRICT !== "false";
+    const strict = POLICY.strict;
     if (strict) {
       console.error("\n✖ No security scan data available.");
       console.error(
