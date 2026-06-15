@@ -13,6 +13,7 @@
 import { existsSync, readFileSync } from "fs";
 
 const BLOCKING_SCANNERS = ["connector_security_scan", "agent_security"];
+const BLOCKING_LEVELS = new Set(["high", "critical", "error"]);
 const RESULTS_FILE = "security-scan-results.json";
 
 interface SecurityFinding {
