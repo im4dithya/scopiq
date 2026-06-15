@@ -243,6 +243,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -260,7 +261,36 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     };
     const fullText = json.choices?.[0]?.message?.content ?? "";
 
-    const [postRaw, insightsRaw = ""] = fullText.split("---INSIGHTS---");
+    // Parse the structured JSON response. Strip markdown fences if the model
+    // adds them despite instructions.
+    let parsed: { status?: string; post?: string | null; message?: string | null } = {};
+    try {
+      const cleaned = fullText
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return {
+        status: "invalid" as const,
+        post: null,
+        insights: [] as { type: "good" | "improve"; text: string }[],
+        message: "Could not parse model response. Please try again.",
+      };
+    }
+
+    if (parsed.status === "invalid") {
+      return {
+        status: "invalid" as const,
+        post: null,
+        insights: [] as { type: "good" | "improve"; text: string }[],
+        message: parsed.message || "We couldn't recognize that as a real product.",
+      };
+    }
+
+    const fullPost = (parsed.post ?? "").toString();
+    const [postRaw, insightsRaw = ""] = fullPost.split("---INSIGHTS---");
     const post = postRaw.trim();
     const insights = insightsRaw
       .split("\n")
@@ -271,5 +301,5 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         text: l.replace(/^(GOOD|IMPROVE):/, "").trim(),
       }));
 
-    return { post, insights };
+    return { status: "valid" as const, post, insights, message: null };
   });
