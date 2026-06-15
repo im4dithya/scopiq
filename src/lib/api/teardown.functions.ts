@@ -165,32 +165,40 @@ export const generateTeardown = createServerFn({ method: "POST" })
 
     const isWebProduct = Boolean(detectedUrl) || looksLikeUrl;
 
-    const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence. Generate a LinkedIn post that performs a product teardown analysis. The post should:
-- Sound like a sharp, curious CS student who is learning PM/PD, not a senior executive
-- Be casual and conversational but insightful
-- Have a strong opening hook (no "I" as first word)
-- Use short paragraphs and arrow (→) or numbered lists for readability
-- Include 2-3 specific "what they did well" observations
-- Include 2-3 specific "what I'd change" observations with reasoning
+    const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence.
+
+STEP 1 — VALIDATE THE INPUT:
+Decide whether the product the user provided refers to a real, identifiable product, app, website, tool, or service you have genuine knowledge of (or, if a URL/screenshot is provided, clearly resolves to a real product).
+- If the input is gibberish, random characters, an obvious typo you cannot confidently map to a real product, or anything you would have to invent details about, treat it as INVALID.
+- Do NOT fuzzy-match nonsense to real products just to be helpful.
+- A URL with a recognizable, resolvable domain, or a screenshot of a real product UI, counts as valid even if the name is unfamiliar.
+
+STEP 2 — RESPOND WITH A SINGLE JSON OBJECT, AND NOTHING ELSE (no markdown fences, no prose):
+{"status":"valid"|"invalid","post":string|null,"message":string|null}
+
+If INVALID: status="invalid", post=null, message=short one-sentence reason (e.g. "Input does not appear to be a real product.").
+
+If VALID: status="valid", message=null, and "post" contains the full LinkedIn teardown post text followed by a "---INSIGHTS---" separator and exactly 4 insight lines:
+GOOD: [something done well]
+GOOD: [something done well]
+IMPROVE: [something to improve]
+IMPROVE: [something to improve]
+
+POST REQUIREMENTS (valid only):
+- Sound like a sharp, curious CS student learning PM/PD, not a senior executive
+- Casual, conversational, insightful
+- Strong opening hook (do NOT start with "I")
+- Short paragraphs, arrows (→) or numbered lists
+- 2-3 specific "what they did well" observations
+- 2-3 specific "what I'd change" observations with reasoning
 - End with an engaging question for comments
-- Include 4-5 relevant hashtags like #ProductManagement #ProductDesign #StudentPM etc.
-- Be between 200-280 words total
-- Feel genuine and personal, not generic
+- 4-5 relevant hashtags (#ProductManagement #ProductDesign #StudentPM etc.)
+- 200-280 words total
+- Genuine and personal, not generic
 
-After the post, on a new line write: ---INSIGHTS---
-Then provide exactly 4 short insights (one sentence each) in this format:
-GOOD: [something done well]
-GOOD: [something done well]
-IMPROVE: [something to improve]
-IMPROVE: [something to improve]
+Detect website/web app vs mobile app. For websites, analyze layout grids, visual hierarchy, CTA placement, landing-page conversion, web responsiveness — not push notifications or app store onboarding.
 
-Keep the insights crisp and specific to the product.
-
-Detect if the target product is a website/web application (based on a provided URL link or desktop website screenshot) vs a traditional mobile application.
-
-If it is a website/web application, pivot your product vocabulary away from mobile-only metrics (like app store onboarding, push notifications, app downloads) and instead analyze web design paradigms: layout grids, desktop visual hierarchy, call-to-action (CTA) positioning, landing page conversions, or web app responsiveness.
-
-If an image/screenshot is provided in the input payload, you must actively inspect its visual design execution (including layout hierarchy, typography, padding, color usage, and interface friction points). Seamlessly weave these specific visual teardown observations into your final LinkedIn post analysis.`;
+If a screenshot is provided, actively inspect its visual execution (layout, typography, padding, color usage, friction points) and weave specific observations into the post.`;
 
     const productContext = isWebProduct
       ? `the web product ${cleanedProductName}${detectedUrl ? ` (${detectedUrl})` : ""}`
