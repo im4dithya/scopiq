@@ -278,9 +278,29 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     }
 
     const json = (await res.json()) as {
-      choices: { message: { content: string } }[];
+      choices: {
+        message: {
+          content: string;
+          annotations?: Array<{
+            type?: string;
+            url_citation?: { url?: string; title?: string };
+          }>;
+        };
+      }[];
     };
-    const fullText = json.choices?.[0]?.message?.content ?? "";
+    const message = json.choices?.[0]?.message;
+    const fullText = message?.content ?? "";
+
+    // Extract web-search citations (OpenRouter surfaces them as message.annotations
+    // with type "url_citation" when the :online / web plugin is used).
+    const sources = (message?.annotations ?? [])
+      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
+      .map((a) => ({
+        url: a.url_citation!.url as string,
+        title: (a.url_citation!.title || a.url_citation!.url) as string,
+      }))
+      // dedupe by url
+      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
 
     // Parse the structured JSON response. Strip markdown fences if the model
     // adds them despite instructions.
@@ -297,6 +317,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         status: "invalid" as const,
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
+        sources: [] as { url: string; title: string }[],
         message: "Could not parse model response. Please try again.",
       };
     }
@@ -306,6 +327,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         status: "invalid" as const,
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
+        sources: [] as { url: string; title: string }[],
         message: parsed.message || "We couldn't recognize that as a real product.",
       };
     }
@@ -322,5 +344,5 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         text: l.replace(/^(GOOD|IMPROVE):/, "").trim(),
       }));
 
-    return { status: "valid" as const, post, insights, message: null };
+    return { status: "valid" as const, post, insights, sources, message: null };
   });
