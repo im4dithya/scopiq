@@ -130,6 +130,7 @@ export const generateTeardown = createServerFn({ method: "POST" })
       ]),
       notes: z.string().trim().max(1000).optional().default(""),
       appStoreId: z.string().trim().max(200).optional().default(""),
+      useWebSearch: z.boolean().optional().default(false),
       screenshot: z
         .object({
           data: z.string().min(1).max(7_500_000),
