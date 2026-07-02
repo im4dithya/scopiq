@@ -250,8 +250,21 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        // OpenRouter :online suffix enables web search grounding for this call.
+        // See https://openrouter.ai/docs/features/web-search
+        model: data.useWebSearch ? "google/gemini-2.5-flash:online" : "google/gemini-2.5-flash",
         response_format: { type: "json_object" },
+        ...(data.useWebSearch
+          ? {
+              plugins: [
+                {
+                  id: "web",
+                  max_results: 5,
+                  search_prompt: `Search for real, current information about "${cleanedProductName}"${detectedUrl ? ` (${detectedUrl})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews. Use these facts to ground the teardown.`,
+                },
+              ],
+            }
+          : {}),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
