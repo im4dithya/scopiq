@@ -48,6 +48,7 @@ export function TeardownView() {
   const [appName, setAppName] = useState("");
   const [focus, setFocus] = useState("overall");
   const [notes, setNotes] = useState("");
+  const [useWebSearch, setUseWebSearch] = useState(true);
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -180,6 +181,7 @@ export function TeardownView() {
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
           appStoreId: parsed.appStoreId,
+          useWebSearch,
           screenshot: screenshot
             ? { data: screenshot.base64, mediaType: screenshot.mediaType }
             : undefined,
@@ -337,6 +339,21 @@ export function TeardownView() {
               </div>
             )}
           </div>
+
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              checked={useWebSearch}
+              onChange={(e) => setUseWebSearch(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-white"
+            />
+            <span className="text-sm">
+              <span className="block font-medium">Use web search grounding</span>
+              <span className="mono-sub block text-xs opacity-70">
+                Look up real, current info about the product (features, pricing, reviews) before writing — reduces hallucinations.
+              </span>
+            </span>
+          </label>
 
           <button
             type="button"

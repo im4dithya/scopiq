@@ -130,6 +130,7 @@ export const generateTeardown = createServerFn({ method: "POST" })
       ]),
       notes: z.string().trim().max(1000).optional().default(""),
       appStoreId: z.string().trim().max(200).optional().default(""),
+      useWebSearch: z.boolean().optional().default(false),
       screenshot: z
         .object({
           data: z.string().min(1).max(7_500_000),
@@ -196,6 +197,13 @@ POST REQUIREMENTS (valid only):
 - 200-280 words total
 - Genuine and personal, not generic
 
+ANTI-HALLUCINATION RULES (STRICT):
+- Base every claim in the post on (a) verifiable facts about the real product, (b) the attached screenshot if any, or (c) the provided user reviews. Do not invent features, pricing, funding, headcount, launch dates, integrations, or partnerships.
+- ${data.useWebSearch ? "You have web search grounding enabled — use it to look up current, real information (features, recent updates, reviews, pricing/plans) about the product BEFORE writing. Prefer specifics you actually found over generic PM tropes." : "You do NOT have web search enabled — stay strictly within what you genuinely know about this product from training data plus the provided reviews/screenshot. If you are not sure about a specific fact (e.g. exact pricing tier, a specific feature name, a recent update), do NOT state it. Speak in terms of the general product experience instead."}
+- If you cannot form 2-3 concrete, product-specific observations without inventing details, return status="invalid" with message="Not enough verifiable information about this product to write a grounded teardown."
+- Never fabricate quotes, statistics, review counts, star ratings, or user numbers.
+- Prefer concrete UI/UX observations ("the onboarding asks for 4 permissions upfront") over vague marketing claims ("industry-leading experience").
+
 Detect website/web app vs mobile app. For websites, analyze layout grids, visual hierarchy, CTA placement, landing-page conversion, web responsiveness — not push notifications or app store onboarding.
 
 If a screenshot is provided, actively inspect its visual execution (layout, typography, padding, color usage, friction points) and weave specific observations into the post.`;
@@ -242,8 +250,21 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        // OpenRouter :online suffix enables web search grounding for this call.
+        // See https://openrouter.ai/docs/features/web-search
+        model: data.useWebSearch ? "google/gemini-2.5-flash:online" : "google/gemini-2.5-flash",
         response_format: { type: "json_object" },
+        ...(data.useWebSearch
+          ? {
+              plugins: [
+                {
+                  id: "web",
+                  max_results: 5,
+                  search_prompt: `Search for real, current information about "${cleanedProductName}"${detectedUrl ? ` (${detectedUrl})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews. Use these facts to ground the teardown.`,
+                },
+              ],
+            }
+          : {}),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
