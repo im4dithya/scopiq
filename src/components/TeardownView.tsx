@@ -57,6 +57,7 @@ export function TeardownView() {
   const [error, setError] = useState<string | null>(null);
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [copied, setCopied] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
