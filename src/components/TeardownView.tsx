@@ -340,6 +340,21 @@ export function TeardownView() {
             )}
           </div>
 
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              checked={useWebSearch}
+              onChange={(e) => setUseWebSearch(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-white"
+            />
+            <span className="text-sm">
+              <span className="block font-medium">Use web search grounding</span>
+              <span className="mono-sub block text-xs opacity-70">
+                Look up real, current info about the product (features, pricing, reviews) before writing — reduces hallucinations.
+              </span>
+            </span>
+          </label>
+
           <button
             type="button"
             onClick={handleGenerate}
