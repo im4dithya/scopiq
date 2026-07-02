@@ -48,6 +48,7 @@ export function TeardownView() {
   const [appName, setAppName] = useState("");
   const [focus, setFocus] = useState("overall");
   const [notes, setNotes] = useState("");
+  const [useWebSearch, setUseWebSearch] = useState(true);
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
