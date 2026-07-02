@@ -181,6 +181,7 @@ export function TeardownView() {
           focus: focus as "overall" | "onboarding" | "retention" | "ux" | "notifications" | "monetization",
           notes: notes.trim(),
           appStoreId: parsed.appStoreId,
+          useWebSearch,
           screenshot: screenshot
             ? { data: screenshot.base64, mediaType: screenshot.mediaType }
             : undefined,
