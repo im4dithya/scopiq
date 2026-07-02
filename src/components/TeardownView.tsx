@@ -25,6 +25,7 @@ const LOADING_MESSAGES = [
 ];
 
 type Insight = { type: "good" | "improve"; text: string };
+type Source = { url: string; title: string };
 
 function useRipple() {
   return (e: MouseEvent<HTMLButtonElement>) => {
