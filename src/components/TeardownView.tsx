@@ -25,6 +25,7 @@ const LOADING_MESSAGES = [
 ];
 
 type Insight = { type: "good" | "improve"; text: string };
+type Source = { url: string; title: string };
 
 function useRipple() {
   return (e: MouseEvent<HTMLButtonElement>) => {
@@ -56,6 +57,7 @@ export function TeardownView() {
   const [error, setError] = useState<string | null>(null);
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [copied, setCopied] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -142,6 +144,7 @@ export function TeardownView() {
   function reset() {
     setPost(null);
     setInsights([]);
+    setSources([]);
     setAppName("");
     setNotes("");
     setFocus("overall");
@@ -164,6 +167,7 @@ export function TeardownView() {
     setLoading(true);
     setPost(null);
     setInsights([]);
+    setSources([]);
 
     let i = 0;
     setLoadingMsg(LOADING_MESSAGES[0]);
@@ -194,9 +198,11 @@ export function TeardownView() {
         );
         setPost(null);
         setInsights([]);
+        setSources([]);
       } else {
         setPost(result.post);
         setInsights(result.insights);
+        setSources(result.sources ?? []);
       }
     } catch {
       setError("Something went wrong. Please try again in a moment.");
@@ -425,6 +431,33 @@ export function TeardownView() {
                 </div>
               ))}
             </div>
+          )}
+
+          {sources.length > 0 && (
+            <details className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium select-none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-open:rotate-90">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                Sources ({sources.length})
+                <span className="mono-sub ml-1 text-xs opacity-60">web pages used for grounding</span>
+              </summary>
+              <ul className="mt-3 space-y-2">
+                {sources.map((s, idx) => (
+                  <li key={idx} className="text-sm">
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-300 underline decoration-white/20 underline-offset-2 hover:decoration-blue-300 break-words"
+                    >
+                      {s.title}
+                    </a>
+                    <div className="mono-sub text-xs opacity-50 break-all">{s.url}</div>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
 
           <button
