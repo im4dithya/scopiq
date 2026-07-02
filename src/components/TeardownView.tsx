@@ -144,6 +144,7 @@ export function TeardownView() {
   function reset() {
     setPost(null);
     setInsights([]);
+    setSources([]);
     setAppName("");
     setNotes("");
     setFocus("overall");
@@ -166,6 +167,7 @@ export function TeardownView() {
     setLoading(true);
     setPost(null);
     setInsights([]);
+    setSources([]);
 
     let i = 0;
     setLoadingMsg(LOADING_MESSAGES[0]);
@@ -196,9 +198,11 @@ export function TeardownView() {
         );
         setPost(null);
         setInsights([]);
+        setSources([]);
       } else {
         setPost(result.post);
         setInsights(result.insights);
+        setSources(result.sources ?? []);
       }
     } catch {
       setError("Something went wrong. Please try again in a moment.");
