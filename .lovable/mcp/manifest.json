@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "teardown-canvas",
+      "version": "0.1.0",
+      "title": "Teardown Canvas"
+    },
+    "tools": [
+      {
+        "name": "generate_teardown",
+        "title": "Generate product teardown",
+        "description": "Generate a LinkedIn-style product teardown post about a real product, app, or website, including good/improve insights and (optionally) web-search sources.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "product": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Product name or website URL, e.g. 'Spotify' or 'https://linear.app'."
+            },
+            "focus": {
+              "default": "overall",
+              "description": "Which aspect of the product experience to focus the teardown on.",
+              "type": "string",
+              "enum": [
+                "overall",
+                "onboarding",
+                "retention",
+                "ux",
+                "notifications",
+                "monetization"
+              ]
+            },
+            "notes": {
+              "description": "Optional personal observations to weave into the post.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "appStoreId": {
+              "description": "Optional Apple App Store numeric ID or apps.apple.com URL to pull real reviews.",
+              "type": "string",
+              "maxLength": 200
+            },
+            "useWebSearch": {
+              "default": true,
+              "description": "Ground the teardown with live web search results.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "product"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "generate_prd",
+        "title": "Generate PRD & product strategy",
+        "description": "Pitch an app or software idea and get a brutally honest PRD in markdown: verdict, personas, keep/add/kill feature breakdown, core user flow, and monetization strategy.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "idea": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 8000,
+              "description": "The product or app idea to analyze, in a sentence or a few paragraphs."
+            },
+            "model": {
+              "default": "gemini-1-5-pro",
+              "description": "Which AI brain to route the analysis through.",
+              "type": "string",
+              "enum": [
+                "claude-3-5-sonnet",
+                "gemini-1-5-pro",
+                "llama-3-1-70b"
+              ]
+            }
+          },
+          "required": [
+            "idea"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
