@@ -17,24 +17,78 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      teardowns: {
+        Row: {
+          created_at: string
+          focus: string
+          id: string
+          insights: Json
+          notes: string | null
+          post: string
+          product_name: string
+          product_url: string | null
+          public: boolean
+          screenshot_url: string | null
+          sources: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          focus?: string
+          id?: string
+          insights?: Json
+          notes?: string | null
+          post: string
+          product_name: string
+          product_url?: string | null
+          public?: boolean
+          screenshot_url?: string | null
+          sources?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          focus?: string
+          id?: string
+          insights?: Json
+          notes?: string | null
+          post?: string
+          product_name?: string
+          product_url?: string | null
+          public?: boolean
+          screenshot_url?: string | null
+          sources?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

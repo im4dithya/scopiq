@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { getMyProfile } from "@/lib/profiles";
 
 function safeNext(value: unknown): string {
   if (typeof value !== "string") return "/";
@@ -44,14 +45,27 @@ function AuthPage() {
   const [pendingConfirm, setPendingConfirm] = useState(false);
 
   useEffect(() => {
+    async function routeAfterAuth() {
+      try {
+        const profile = await getMyProfile();
+        if (!profile?.username) {
+          window.location.assign("/settings?onboarding=1");
+          return;
+        }
+      } catch {
+        // fall through to the requested destination
+      }
+      window.location.assign(next);
+    }
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) window.location.assign(next);
+      if (session) void routeAfterAuth();
     });
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.assign(next);
+      if (data.session) void routeAfterAuth();
     });
     return () => sub.subscription.unsubscribe();
   }, [next, navigate]);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
