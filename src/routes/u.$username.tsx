@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/AppNav";
-import { getPublicProfile } from "@/lib/api/public.functions";
+import { getPublicProfile, type PublicTeardownCard } from "@/lib/api/public.functions";
 import { FOCUS_LABELS } from "@/lib/teardowns";
 import { resolveAvatar } from "@/lib/storage";
 
@@ -102,7 +102,7 @@ function PortfolioPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {teardowns.map((t) => (
+            {(teardowns as PublicTeardownCard[]).map((t) => (
               <Link
                 key={t.id}
                 to="/teardown/$id"
