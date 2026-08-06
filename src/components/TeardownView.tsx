@@ -2,7 +2,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } from "react";
 import { ImageUp, X } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { generateTeardown } from "@/lib/api/teardown.functions";
+import { useSession } from "@/hooks/useSession";
+import { saveTeardown } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
 
 const QUICK_APPS = ["Spotify", "Swiggy", "Instagram", "Notion", "Google Maps", "YouTube"];
@@ -45,6 +48,9 @@ function useRipple() {
 export function TeardownView() {
   const generate = useServerFn(generateTeardown);
   const ripple = useRipple();
+  const { user } = useSession();
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
 
   const [appName, setAppName] = useState("");
   const [focus, setFocus] = useState("overall");
@@ -142,6 +148,7 @@ export function TeardownView() {
   }
 
   function reset() {
+    setSavedId(null);
     setPost(null);
     setInsights([]);
     setSources([]);
@@ -209,6 +216,31 @@ export function TeardownView() {
     } finally {
       if (msgTimer.current) clearInterval(msgTimer.current);
       setLoading(false);
+    }
+  }
+
+  async function handleSave(e: MouseEvent<HTMLButtonElement>) {
+    ripple(e);
+    if (!post || saving || savedId) return;
+    setSaving(true);
+    try {
+      const parsed = analyzeOmniInput(appName);
+      const id = await saveTeardown({
+        productName: parsed.cleanedName || appName.trim(),
+        productUrl: parsed.originalUrl,
+        focus,
+        notes: notes.trim(),
+        screenshotFile: screenshot?.file,
+        post,
+        insights,
+        sources,
+      });
+      setSavedId(id);
+      toast.success("Saved to your history.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save this teardown.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -391,6 +423,22 @@ export function TeardownView() {
         <section>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <span className="loading-label">LinkedIn post — ready to copy</span>
+            <div className="flex flex-wrap items-center gap-2">
+            {user ? (
+              savedId ? (
+                <Link to="/teardown/$id" params={{ id: savedId }} className="btn-white-sm">
+                  View saved teardown
+                </Link>
+              ) : (
+                <button type="button" onClick={handleSave} disabled={saving} className="btn-white-sm">
+                  {saving ? "Saving…" : "Save to my history"}
+                </button>
+              )
+            ) : (
+              <Link to="/auth" search={{ next: "/" }} className="btn-white-sm">
+                Sign in to save
+              </Link>
+            )}
             <button
               type="button"
               onClick={copyPost}
@@ -413,6 +461,7 @@ export function TeardownView() {
                 </>
               )}
             </button>
+            </div>
           </div>
 
           <div className="glass-card post-box whitespace-pre-wrap p-6">{post}</div>

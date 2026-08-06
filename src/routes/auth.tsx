@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { getMyProfile } from "@/lib/profiles";
 
 function safeNext(value: unknown): string {
   if (typeof value !== "string") return "/";
