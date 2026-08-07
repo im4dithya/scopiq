@@ -100,6 +100,40 @@ export async function getMyTeardown(id: string): Promise<SavedTeardown | null> {
   return (data as unknown as SavedTeardown) ?? null;
 }
 
+export async function updateTeardown(
+  id: string,
+  patch: {
+    focus?: string;
+    notes?: string | null;
+    post?: string;
+    screenshotFile?: File | undefined;
+    removeScreenshot?: boolean;
+  },
+) {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error("You need to be signed in.");
+
+  const update: {
+    focus?: string;
+    notes?: string | null;
+    post?: string;
+    screenshot_url?: string | null;
+  } = {};
+  if (patch.focus !== undefined) update.focus = patch.focus;
+  if (patch.notes !== undefined) update.notes = patch.notes || null;
+  if (patch.post !== undefined) update.post = patch.post;
+
+  if (patch.screenshotFile) {
+    update.screenshot_url = await uploadScreenshot(uid, patch.screenshotFile);
+  } else if (patch.removeScreenshot) {
+    update.screenshot_url = null;
+  }
+
+  const { error } = await supabase.from("teardowns").update(update).eq("id", id);
+  if (error) throw new Error("Could not save your changes. Please try again.");
+}
+
 export async function setTeardownPublic(id: string, isPublic: boolean) {
   const { error } = await supabase.from("teardowns").update({ public: isPublic }).eq("id", id);
   if (error) throw new Error("Could not update visibility.");
