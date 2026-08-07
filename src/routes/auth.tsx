@@ -37,12 +37,13 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { next } = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     async function routeAfterAuth() {
@@ -71,7 +72,13 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setResetSent(true);
+      } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -88,6 +95,23 @@ function AuthPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResendConfirmation() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}${next}` },
+      });
+      if (error) throw error;
+      toast.success("Confirmation email sent again.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend that email.");
     } finally {
       setBusy(false);
     }
@@ -110,18 +134,62 @@ function AuthPage() {
         <header className="mb-8 text-center">
           <div className="eyebrow">Teardown Canvas</div>
           <h1 className="display-h1 mt-3 text-4xl">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
+            {mode === "signin"
+              ? "Welcome back"
+              : mode === "signup"
+                ? "Create your account"
+                : "Reset your password"}
           </h1>
           <p className="mono-sub mt-3">
-            Sign in to generate teardowns and connect AI assistants to your account.
+            {mode === "forgot"
+              ? "We'll email you a secure link to choose a new password."
+              : "Sign in to generate teardowns and connect AI assistants to your account."}
           </p>
         </header>
 
         <section className="glass-card p-6">
           {pendingConfirm ? (
-            <p className="text-sm leading-relaxed text-[#d4cfc9]">
-              Check your email to confirm your address, then come back and sign in.
-            </p>
+            <div>
+              <p className="text-sm leading-relaxed text-[#d4cfc9]">
+                We sent a confirmation link to <span className="text-[#f3ede4]">{email}</span>.
+                Confirm your address, then come back and sign in.
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void onResendConfirmation()}
+                className="btn-white-sm mt-5"
+              >
+                Resend confirmation email
+              </button>
+              <button
+                type="button"
+                className="reset-btn mt-5 w-full text-center"
+                onClick={() => {
+                  setPendingConfirm(false);
+                  setMode("signin");
+                }}
+              >
+                Back to sign in
+              </button>
+            </div>
+          ) : resetSent ? (
+            <div>
+              <p className="text-sm leading-relaxed text-[#d4cfc9]">
+                If an account exists for <span className="text-[#f3ede4]">{email}</span>, a
+                password reset link is on its way. The link expires shortly, so use it soon.
+              </p>
+              <button
+                type="button"
+                className="reset-btn mt-5 w-full text-center"
+                onClick={() => {
+                  setResetSent(false);
+                  setMode("signin");
+                }}
+              >
+                Back to sign in
+              </button>
+            </div>
           ) : (
             <>
               <form onSubmit={onSubmit}>
@@ -155,41 +223,67 @@ function AuthPage() {
                     autoComplete="email"
                   />
                 </div>
-                <div className="mb-5">
-                  <label className="field-label" htmlFor="password">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="field-input"
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                  />
-                </div>
+                {mode !== "forgot" && (
+                  <div className="mb-5">
+                    <label className="field-label" htmlFor="password">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="field-input"
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    />
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        className="reset-btn mt-3"
+                        onClick={() => setMode("forgot")}
+                      >
+                        Forgot your password?
+                      </button>
+                    )}
+                  </div>
+                )}
                 <button type="submit" disabled={busy} className="btn-white w-full">
                   <LogIn size={16} />
-                  {mode === "signin" ? "Sign in" : "Create account"}
+                  {mode === "signin"
+                    ? "Sign in"
+                    : mode === "signup"
+                      ? "Create account"
+                      : "Send reset link"}
                 </button>
               </form>
 
-              <div className="my-5 text-center text-xs tracking-widest text-[#8b857f]">OR</div>
+              {mode !== "forgot" && (
+                <>
+                  <div className="my-5 text-center text-xs tracking-widest text-[#8b857f]">OR</div>
 
-              <button type="button" onClick={onGoogle} disabled={busy} className="btn-white w-full">
-                Continue with Google
-              </button>
+                  <button
+                    type="button"
+                    onClick={onGoogle}
+                    disabled={busy}
+                    className="btn-white w-full"
+                  >
+                    Continue with Google
+                  </button>
+                </>
+              )}
 
               <button
                 type="button"
                 className="reset-btn mt-6 w-full text-center"
-                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                onClick={() => setMode(mode === "signup" ? "signin" : mode === "forgot" ? "signin" : "signup")}
               >
                 {mode === "signin"
                   ? "No account yet? Create one"
-                  : "Already have an account? Sign in"}
+                  : mode === "signup"
+                    ? "Already have an account? Sign in"
+                    : "Back to sign in"}
               </button>
             </>
           )}
