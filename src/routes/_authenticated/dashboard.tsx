@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Search, Trash2, ExternalLink } from "lucide-react";
+import { Search, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
 import {
   deleteTeardown,
@@ -160,6 +160,9 @@ function Dashboard() {
                     className="btn-white-sm"
                   >
                     <ExternalLink size={13} /> View
+                  </Link>
+                  <Link to="/edit/$id" params={{ id: t.id }} className="btn-white-sm">
+                    <Pencil size={13} /> Edit
                   </Link>
                   <button
                     type="button"

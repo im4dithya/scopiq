@@ -114,15 +114,20 @@ export async function updateTeardown(
   const uid = userData.user?.id;
   if (!uid) throw new Error("You need to be signed in.");
 
-  const update: Record<string, unknown> = {};
-  if (patch.focus !== undefined) update["focus"] = patch.focus;
-  if (patch.notes !== undefined) update["notes"] = patch.notes || null;
-  if (patch.post !== undefined) update["post"] = patch.post;
+  const update: {
+    focus?: string;
+    notes?: string | null;
+    post?: string;
+    screenshot_url?: string | null;
+  } = {};
+  if (patch.focus !== undefined) update.focus = patch.focus;
+  if (patch.notes !== undefined) update.notes = patch.notes || null;
+  if (patch.post !== undefined) update.post = patch.post;
 
   if (patch.screenshotFile) {
-    update["screenshot_url"] = await uploadScreenshot(uid, patch.screenshotFile);
+    update.screenshot_url = await uploadScreenshot(uid, patch.screenshotFile);
   } else if (patch.removeScreenshot) {
-    update["screenshot_url"] = null;
+    update.screenshot_url = null;
   }
 
   const { error } = await supabase.from("teardowns").update(update).eq("id", id);
