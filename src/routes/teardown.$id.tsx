@@ -12,8 +12,9 @@ export const Route = createFileRoute("/teardown/$id")({
       return { teardown: null, author: null };
     }
   },
-  head: ({ loaderData }) => {
+  head: ({ params, loaderData }) => {
     const t = loaderData?.teardown;
+    const url = `https://teardown-joy.lovable.app/teardown/${params.id}`;
     if (!t) {
       return {
         meta: [
@@ -23,15 +24,21 @@ export const Route = createFileRoute("/teardown/$id")({
       };
     }
     const desc = t.post.slice(0, 155);
+    const title = `${t.product_name} teardown — Teardown Canvas`;
     return {
       meta: [
-        { title: `${t.product_name} teardown — Teardown Canvas` },
+        { title },
         { name: "description", content: desc },
         { property: "og:title", content: `${t.product_name} teardown` },
         { property: "og:description", content: desc },
         { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        { property: "og:site_name", content: "Teardown Canvas" },
         { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: `${t.product_name} teardown` },
+        { name: "twitter:description", content: desc },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   errorComponent: () => <Message title="This teardown didn't load" />,

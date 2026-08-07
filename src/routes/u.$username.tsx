@@ -11,7 +11,8 @@ export const Route = createFileRoute("/u/$username")({
     if (!result.profile) throw notFound();
     return result;
   },
-  head: ({ loaderData }) => {
+  head: ({ params, loaderData }) => {
+    const url = `https://teardown-joy.lovable.app/u/${params.username}`;
     if (!loaderData) {
       return {
         meta: [
@@ -21,17 +22,23 @@ export const Route = createFileRoute("/u/$username")({
       };
     }
     const name = loaderData.profile?.display_name ?? loaderData.profile?.username ?? "Portfolio";
+    const title = `${name} — Teardown portfolio`;
     const desc =
       loaderData.profile?.bio ?? `Product teardowns published by ${name} on Teardown Canvas.`;
     return {
       meta: [
-        { title: `${name} — Teardown portfolio` },
+        { title },
         { name: "description", content: desc },
-        { property: "og:title", content: `${name} — Teardown portfolio` },
+        { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "profile" },
+        { property: "og:url", content: url },
+        { property: "og:site_name", content: "Teardown Canvas" },
         { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   errorComponent: () => <Fallback title="This profile didn't load" />,
