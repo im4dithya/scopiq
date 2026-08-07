@@ -72,7 +72,13 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setResetSent(true);
+      } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -89,6 +95,23 @@ function AuthPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResendConfirmation() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}${next}` },
+      });
+      if (error) throw error;
+      toast.success("Confirmation email sent again.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend that email.");
     } finally {
       setBusy(false);
     }
