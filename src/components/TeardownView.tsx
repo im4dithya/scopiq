@@ -7,6 +7,9 @@ import { generateTeardown } from "@/lib/api/teardown.functions";
 import { useSession } from "@/hooks/useSession";
 import { saveTeardown } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
+import { AnalysisDashboard } from "@/components/AnalysisDashboard";
+import { emptyAnalysis, type TeardownAnalysis } from "@/lib/analysis";
+
 
 const QUICK_APPS = ["Spotify", "Swiggy", "Instagram", "Notion", "Google Maps", "YouTube"];
 
@@ -64,6 +67,7 @@ export function TeardownView() {
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
+  const [analysis, setAnalysis] = useState<TeardownAnalysis>(emptyAnalysis());
   const [copied, setCopied] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -152,6 +156,7 @@ export function TeardownView() {
     setPost(null);
     setInsights([]);
     setSources([]);
+    setAnalysis(emptyAnalysis());
     setAppName("");
     setNotes("");
     setFocus("overall");
@@ -175,6 +180,7 @@ export function TeardownView() {
     setPost(null);
     setInsights([]);
     setSources([]);
+    setAnalysis(emptyAnalysis());
 
     let i = 0;
     setLoadingMsg(LOADING_MESSAGES[0]);
@@ -206,10 +212,12 @@ export function TeardownView() {
         setPost(null);
         setInsights([]);
         setSources([]);
+        setAnalysis(emptyAnalysis());
       } else {
         setPost(result.post);
         setInsights(result.insights);
         setSources(result.sources ?? []);
+        setAnalysis(result.analysis ?? emptyAnalysis());
       }
     } catch {
       setError("Something went wrong. Please try again in a moment.");
@@ -481,6 +489,8 @@ export function TeardownView() {
               ))}
             </div>
           )}
+
+          <AnalysisDashboard analysis={analysis} screenshotUrl={screenshot?.previewUrl ?? null} />
 
           {sources.length > 0 && (
             <details className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 [&_summary::-webkit-details-marker]:hidden">

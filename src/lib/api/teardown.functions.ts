@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { emptyAnalysis, normalizeAnalysis, type RawParsed } from "@/lib/analysis";
+
 
 const focusLabels: Record<string, string> = {
   overall: "overall product experience",
@@ -175,15 +177,28 @@ Decide whether the product the user provided refers to a real, identifiable prod
 - A URL with a recognizable, resolvable domain, or a screenshot of a real product UI, counts as valid even if the name is unfamiliar.
 
 STEP 2 — RESPOND WITH A SINGLE JSON OBJECT, AND NOTHING ELSE (no markdown fences, no prose):
-{"status":"valid"|"invalid","post":string|null,"message":string|null}
+{"status":"valid"|"invalid","post":string|null,"message":string|null,"anchors":[],"jtbd":[],"metrics":null,"darkPatterns":[]}
 
-If INVALID: status="invalid", post=null, message=short one-sentence reason (e.g. "Input does not appear to be a real product.").
+If INVALID: status="invalid", post=null, message=short one-sentence reason (e.g. "Input does not appear to be a real product."), and empty/null analysis fields.
 
 If VALID: status="valid", message=null, and "post" contains the full LinkedIn teardown post text followed by a "---INSIGHTS---" separator and exactly 4 insight lines:
 GOOD: [something done well]
 GOOD: [something done well]
 IMPROVE: [something to improve]
 IMPROVE: [something to improve]
+
+ALSO FOR VALID RESPONSES, fill these analysis fields:
+
+1. "anchors" — Visual Anchoring. 3-5 objects: {"label":string,"note":string,"kind":"good"|"improve","x":number,"y":number,"w":number,"h":number}
+   x/y/w/h are PERCENTAGES (0-100) of the image, marking the exact region the observation refers to.
+   ${data.screenshot ? "A screenshot IS attached — anchor every item to a real region you can actually see in it (be accurate about position)." : "NO screenshot was attached — return an EMPTY array [] for anchors. Never invent coordinates."}
+
+2. "jtbd" — Jobs-To-Be-Done + strategy. 2-3 objects: {"job":"When [situation], I want to [motivation], so I can [outcome]","persona":string,"gap":string}
+
+3. "metrics" — measurement strategy: {"northStar":{"name":string,"why":string},"supporting":[{"name":string,"definition":string,"target":string}]} with 3 supporting metrics tied to the focus area.
+
+4. "darkPatterns" — Dark Pattern Detection. 0-4 objects: {"name":string,"severity":"low"|"medium"|"high","evidence":string,"fix":string}
+   Only report patterns you have real grounds for (roach motel, forced continuity, confirmshaming, disguised ads, hidden costs, nagging, privacy zuckering, trick questions, false urgency). Return [] when there is no genuine evidence — do NOT invent them.
 
 POST REQUIREMENTS (valid only):
 - Sound like a sharp, curious CS student learning PM/PD, not a senior executive
@@ -196,6 +211,7 @@ POST REQUIREMENTS (valid only):
 - 4-5 relevant hashtags (#ProductManagement #ProductDesign #StudentPM etc.)
 - 200-280 words total
 - Genuine and personal, not generic
+
 
 ANTI-HALLUCINATION RULES (STRICT):
 - Base every claim in the post on (a) verifiable facts about the real product, (b) the attached screenshot if any, or (c) the provided user reviews. Do not invent features, pricing, funding, headcount, launch dates, integrations, or partnerships.
@@ -304,20 +320,21 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
 
     // Parse the structured JSON response. Strip markdown fences if the model
     // adds them despite instructions.
-    let parsed: { status?: string; post?: string | null; message?: string | null } = {};
+    let parsed: RawParsed = {};
     try {
       const cleaned = fullText
         .trim()
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/```\s*$/i, "")
         .trim();
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned) as RawParsed;
     } catch {
       return {
         status: "invalid" as const,
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
         sources: [] as { url: string; title: string }[],
+        analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
       };
     }
@@ -328,6 +345,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
         sources: [] as { url: string; title: string }[],
+        analysis: emptyAnalysis(),
         message: parsed.message || "We couldn't recognize that as a real product.",
       };
     }
@@ -344,5 +362,8 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         text: l.replace(/^(GOOD|IMPROVE):/, "").trim(),
       }));
 
-    return { status: "valid" as const, post, insights, sources, message: null };
+    const analysis = normalizeAnalysis(parsed, Boolean(data.screenshot));
+
+    return { status: "valid" as const, post, insights, sources, analysis, message: null };
   });
+
