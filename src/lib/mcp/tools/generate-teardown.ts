@@ -77,6 +77,7 @@ export default defineTool({
         post: result.post,
         insights: result.insights,
         sources: result.sources,
+        analysis: result.analysis,
       },
     };
   },
