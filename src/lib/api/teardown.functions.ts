@@ -318,20 +318,21 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
 
     // Parse the structured JSON response. Strip markdown fences if the model
     // adds them despite instructions.
-    let parsed: { status?: string; post?: string | null; message?: string | null } = {};
+    let parsed: RawParsed = {};
     try {
       const cleaned = fullText
         .trim()
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/```\s*$/i, "")
         .trim();
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned) as RawParsed;
     } catch {
       return {
         status: "invalid" as const,
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
         sources: [] as { url: string; title: string }[],
+        analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
       };
     }
@@ -342,6 +343,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         post: null,
         insights: [] as { type: "good" | "improve"; text: string }[],
         sources: [] as { url: string; title: string }[],
+        analysis: emptyAnalysis(),
         message: parsed.message || "We couldn't recognize that as a real product.",
       };
     }
@@ -358,5 +360,8 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         text: l.replace(/^(GOOD|IMPROVE):/, "").trim(),
       }));
 
-    return { status: "valid" as const, post, insights, sources, message: null };
+    const analysis = normalizeAnalysis(parsed, Boolean(data.screenshot));
+
+    return { status: "valid" as const, post, insights, sources, analysis, message: null };
   });
+
