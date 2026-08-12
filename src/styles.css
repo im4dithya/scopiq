@@ -603,3 +603,55 @@
   background: linear-gradient(135deg, rgba(255, 184, 102, 0.18), rgba(230, 161, 92, 0.1));
   color: #ffb866;
 }
+
+/* ---- Analysis dashboard: visual anchoring + severity badges ---- */
+.anchor-box {
+  position: absolute;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 184, 102, 0.55);
+  background: rgba(255, 184, 102, 0.1);
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+  cursor: pointer;
+}
+.anchor-box.anchor-good {
+  border-color: rgba(120, 220, 170, 0.6);
+  background: rgba(120, 220, 170, 0.1);
+}
+.anchor-box.anchor-active {
+  background: rgba(255, 214, 150, 0.22);
+  box-shadow:
+    0 0 0 2px rgba(255, 214, 150, 0.5),
+    0 0 28px rgba(255, 184, 102, 0.35);
+}
+.anchor-pin {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #f3ede4;
+  color: #12100e;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge.severity-high {
+  border-color: rgba(255, 120, 110, 0.45);
+  background: rgba(255, 120, 110, 0.14);
+  color: #ff9c94;
+}
+.badge.severity-medium {
+  border-color: rgba(255, 184, 102, 0.4);
+  background: rgba(255, 184, 102, 0.12);
+  color: #ffb866;
+}
+.badge.severity-low {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4cfc9;
+}
