@@ -7,6 +7,9 @@ import { generateTeardown } from "@/lib/api/teardown.functions";
 import { useSession } from "@/hooks/useSession";
 import { saveTeardown } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
+import { AnalysisDashboard } from "@/components/AnalysisDashboard";
+import { emptyAnalysis, type TeardownAnalysis } from "@/lib/analysis";
+
 
 const QUICK_APPS = ["Spotify", "Swiggy", "Instagram", "Notion", "Google Maps", "YouTube"];
 
