@@ -639,6 +639,95 @@ export function TeardownView() {
             </div>
           </div>
 
+          {history.length > 0 && (
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="section-title">What changed</h3>
+                <span className="mono-sub text-xs opacity-60">
+                  {history.length} refinement{history.length === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              <ol className="refine-timeline mt-3">
+                {history.map((h, idx) => {
+                  const open = openEntry === idx;
+                  return (
+                    <li key={`${h.at}-${idx}`} className="refine-entry">
+                      <button
+                        type="button"
+                        onClick={() => setOpenEntry(open ? null : idx)}
+                        className="refine-entry-head"
+                        aria-expanded={open}
+                      >
+                        <span className="refine-entry-title">{h.request}</span>
+                        <span className="mono-sub text-xs opacity-60">
+                          {new Date(h.at).toLocaleString()}
+                        </span>
+                      </button>
+
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <span className="delta-chip">+{h.addedJtbd.length} JTBD</span>
+                        <span className="delta-chip">
+                          +{h.addedDarkPatterns.length} dark pattern
+                          {h.addedDarkPatterns.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="delta-chip">
+                          {h.metricsUpdated ? "Metrics updated" : "Metrics unchanged"}
+                        </span>
+                      </div>
+
+                      {open && (
+                        <div className="mt-3 space-y-3 text-sm">
+                          {h.addedJtbd.length > 0 && (
+                            <div>
+                              <div className="loading-label mb-1">New jobs to be done</div>
+                              <ul className="list-disc space-y-1 pl-5 opacity-90">
+                                {h.addedJtbd.map((j, i) => (
+                                  <li key={i}>
+                                    {j.job}
+                                    {j.persona ? ` — ${j.persona}` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {h.addedDarkPatterns.length > 0 && (
+                            <div>
+                              <div className="loading-label mb-1">New dark patterns</div>
+                              <ul className="list-disc space-y-1 pl-5 opacity-90">
+                                {h.addedDarkPatterns.map((d, i) => (
+                                  <li key={i}>
+                                    <strong>{d.name}</strong>
+                                    {d.severity ? ` (${d.severity})` : ""}
+                                    {d.evidence ? ` — ${d.evidence}` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {h.addendum && (
+                            <div>
+                              <div className="loading-label mb-1">Added to the post</div>
+                              <p className="whitespace-pre-wrap opacity-90">{h.addendum}</p>
+                            </div>
+                          )}
+                          {h.addedJtbd.length === 0 &&
+                            h.addedDarkPatterns.length === 0 &&
+                            !h.metricsUpdated &&
+                            !h.addendum && (
+                              <p className="opacity-70">
+                                This refinement did not add any new structured items.
+                              </p>
+                            )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+
           {sources.length > 0 && (
             <details className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 [&_summary::-webkit-details-marker]:hidden">
               <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium select-none">
