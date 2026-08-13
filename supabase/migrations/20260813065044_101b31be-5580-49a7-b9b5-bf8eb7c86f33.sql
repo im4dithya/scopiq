@@ -1,0 +1,1 @@
+ALTER TABLE public.teardowns ADD COLUMN IF NOT EXISTS refinements jsonb NOT NULL DEFAULT '[]'::jsonb;
