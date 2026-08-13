@@ -3,12 +3,21 @@ import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } f
 import { ImageUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { generateTeardown } from "@/lib/api/teardown.functions";
+import { generateTeardown, refineTeardown } from "@/lib/api/teardown.functions";
 import { useSession } from "@/hooks/useSession";
 import { saveTeardown } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
 import { AnalysisDashboard } from "@/components/AnalysisDashboard";
 import { emptyAnalysis, type TeardownAnalysis } from "@/lib/analysis";
+
+function qualityScore(a: TeardownAnalysis, post: string | null): number {
+  let score = post ? 40 : 0;
+  score += Math.min(24, a.jtbd.length * 8);
+  score += Math.min(18, a.darkPatterns.length * 6);
+  score += a.metrics ? 10 : 0;
+  score += Math.min(8, a.anchors.length * 2);
+  return Math.min(100, score);
+}
 
 
 const QUICK_APPS = ["Spotify", "Swiggy", "Instagram", "Notion", "Google Maps", "YouTube"];
@@ -50,6 +59,7 @@ function useRipple() {
 
 export function TeardownView() {
   const generate = useServerFn(generateTeardown);
+  const refine = useServerFn(refineTeardown);
   const ripple = useRipple();
   const { user } = useSession();
   const [saving, setSaving] = useState(false);
@@ -69,6 +79,9 @@ export function TeardownView() {
   const [sources, setSources] = useState<Source[]>([]);
   const [analysis, setAnalysis] = useState<TeardownAnalysis>(emptyAnalysis());
   const [copied, setCopied] = useState(false);
+  const [refineText, setRefineText] = useState("");
+  const [refining, setRefining] = useState(false);
+  const [scoreBumped, setScoreBumped] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   type ScreenshotState = {
@@ -162,6 +175,7 @@ export function TeardownView() {
     setFocus("overall");
     setActiveChip(null);
     setError(null);
+    setRefineText("");
     clearScreenshot();
   }
 
@@ -249,6 +263,67 @@ export function TeardownView() {
       toast.error(err instanceof Error ? err.message : "Could not save this teardown.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleRefine(e: MouseEvent<HTMLButtonElement>) {
+    ripple(e);
+    const request = refineText.trim();
+    if (!post || refining) return;
+    if (request.length < 3) {
+      toast.error("Describe what you'd like analysed (a few words minimum).");
+      return;
+    }
+    if (request.length > 200) {
+      toast.error("Keep the refinement request under 200 characters.");
+      return;
+    }
+    setRefining(true);
+    try {
+      const parsedInput = analyzeOmniInput(appName);
+      const result = await refine({
+        data: {
+          appName: parsedInput.cleanedName || appName.trim(),
+          productUrl: parsedInput.originalUrl,
+          existingPost: post,
+          existingAnalysis: analysis as unknown as Record<string, never>,
+          refinementRequest: request,
+        },
+      });
+      if (result.status === "invalid") {
+        toast.error(result.message || "Could not refine this teardown. Try again.");
+        return;
+      }
+      const before = qualityScore(analysis, post);
+      const merged: TeardownAnalysis = {
+        anchors: analysis.anchors,
+        jtbd: [
+          ...analysis.jtbd,
+          ...result.analysis.jtbd.filter(
+            (n) => !analysis.jtbd.some((o) => o.job.toLowerCase() === n.job.toLowerCase()),
+          ),
+        ],
+        metrics: result.analysis.metrics ?? analysis.metrics,
+        darkPatterns: [
+          ...analysis.darkPatterns,
+          ...result.analysis.darkPatterns.filter(
+            (n) => !analysis.darkPatterns.some((o) => o.name.toLowerCase() === n.name.toLowerCase()),
+          ),
+        ],
+      };
+      const nextPost = result.addendum ? `${post}\n\n${result.addendum}` : post;
+      setAnalysis(merged);
+      setPost(nextPost);
+      setRefineText("");
+      if (qualityScore(merged, nextPost) > before) {
+        setScoreBumped(true);
+        setTimeout(() => setScoreBumped(false), 1400);
+      }
+      toast.success("Refinement added.");
+    } catch {
+      toast.error("Refinement failed. Please try again in a moment.");
+    } finally {
+      setRefining(false);
     }
   }
 
@@ -491,6 +566,50 @@ export function TeardownView() {
           )}
 
           <AnalysisDashboard analysis={analysis} screenshotUrl={screenshot?.previewUrl ?? null} />
+
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="loading-label">Analysis quality</span>
+              <span className={`quality-score ${scoreBumped ? "score-bump" : ""}`}>
+                {qualityScore(analysis, post)}
+              </span>
+            </div>
+            <div className="quality-meter mt-2">
+              <div
+                className="quality-meter-fill"
+                style={{ width: `${qualityScore(analysis, post)}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+            <label className="field-label" htmlFor="refine-input">
+              Ask for more analysis
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="refine-input"
+                type="text"
+                value={refineText}
+                maxLength={200}
+                disabled={refining}
+                onChange={(e) => setRefineText(e.target.value)}
+                placeholder="e.g. Analyze B2B pricing expansion, or add a competitor comparison"
+                className="field-input flex-1 disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={handleRefine}
+                disabled={refining || refineText.trim().length < 3}
+                className="btn-white-sm shrink-0"
+              >
+                {refining ? "Refining…" : "Refine"}
+              </button>
+            </div>
+            <div className="mono-sub mt-2 text-xs opacity-60">
+              {refineText.length}/200 · adds new sections to the post and analysis
+            </div>
+          </div>
 
           {sources.length > 0 && (
             <details className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 [&_summary::-webkit-details-marker]:hidden">
