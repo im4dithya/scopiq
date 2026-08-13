@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { generateTeardown, refineTeardown } from "@/lib/api/teardown.functions";
 import { useSession } from "@/hooks/useSession";
-import { saveTeardown } from "@/lib/teardowns";
+import { saveTeardown, saveRefinementHistory, type RefinementEntry } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
 import { AnalysisDashboard } from "@/components/AnalysisDashboard";
 import { emptyAnalysis, type TeardownAnalysis } from "@/lib/analysis";
@@ -82,6 +82,8 @@ export function TeardownView() {
   const [refineText, setRefineText] = useState("");
   const [refining, setRefining] = useState(false);
   const [scoreBumped, setScoreBumped] = useState(false);
+  const [history, setHistory] = useState<RefinementEntry[]>([]);
+  const [openEntry, setOpenEntry] = useState<number | null>(0);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   type ScreenshotState = {
@@ -176,6 +178,8 @@ export function TeardownView() {
     setActiveChip(null);
     setError(null);
     setRefineText("");
+    setHistory([]);
+    setOpenEntry(0);
     clearScreenshot();
   }
 
@@ -256,6 +260,7 @@ export function TeardownView() {
         post,
         insights,
         sources,
+        refinements: history,
       });
       setSavedId(id);
       toast.success("Saved to your history.");
@@ -312,6 +317,29 @@ export function TeardownView() {
         ],
       };
       const nextPost = result.addendum ? `${post}\n\n${result.addendum}` : post;
+      const addedJtbd = merged.jtbd.slice(analysis.jtbd.length);
+      const addedDarkPatterns = merged.darkPatterns.slice(analysis.darkPatterns.length);
+      const entry: RefinementEntry = {
+        request,
+        at: new Date().toISOString(),
+        addedJtbd: addedJtbd.map((j) => ({ job: j.job, persona: j.persona, gap: j.gap })),
+        addedDarkPatterns: addedDarkPatterns.map((d) => ({
+          name: d.name,
+          severity: d.severity,
+          evidence: d.evidence,
+          fix: d.fix,
+        })),
+        metricsUpdated: Boolean(result.analysis.metrics),
+        addendum: result.addendum,
+      };
+      const nextHistory = [...history, entry];
+      setHistory(nextHistory);
+      setOpenEntry(nextHistory.length - 1);
+      if (savedId) {
+        void saveRefinementHistory(savedId, nextHistory).catch(() => {
+          toast.error("Refinement saved locally, but history could not be synced.");
+        });
+      }
       setAnalysis(merged);
       setPost(nextPost);
       setRefineText("");
@@ -610,6 +638,95 @@ export function TeardownView() {
               {refineText.length}/200 · adds new sections to the post and analysis
             </div>
           </div>
+
+          {history.length > 0 && (
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="section-title">What changed</h3>
+                <span className="mono-sub text-xs opacity-60">
+                  {history.length} refinement{history.length === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              <ol className="refine-timeline mt-3">
+                {history.map((h, idx) => {
+                  const open = openEntry === idx;
+                  return (
+                    <li key={`${h.at}-${idx}`} className="refine-entry">
+                      <button
+                        type="button"
+                        onClick={() => setOpenEntry(open ? null : idx)}
+                        className="refine-entry-head"
+                        aria-expanded={open}
+                      >
+                        <span className="refine-entry-title">{h.request}</span>
+                        <span className="mono-sub text-xs opacity-60">
+                          {new Date(h.at).toLocaleString()}
+                        </span>
+                      </button>
+
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <span className="delta-chip">+{h.addedJtbd.length} JTBD</span>
+                        <span className="delta-chip">
+                          +{h.addedDarkPatterns.length} dark pattern
+                          {h.addedDarkPatterns.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="delta-chip">
+                          {h.metricsUpdated ? "Metrics updated" : "Metrics unchanged"}
+                        </span>
+                      </div>
+
+                      {open && (
+                        <div className="mt-3 space-y-3 text-sm">
+                          {h.addedJtbd.length > 0 && (
+                            <div>
+                              <div className="loading-label mb-1">New jobs to be done</div>
+                              <ul className="list-disc space-y-1 pl-5 opacity-90">
+                                {h.addedJtbd.map((j, i) => (
+                                  <li key={i}>
+                                    {j.job}
+                                    {j.persona ? ` — ${j.persona}` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {h.addedDarkPatterns.length > 0 && (
+                            <div>
+                              <div className="loading-label mb-1">New dark patterns</div>
+                              <ul className="list-disc space-y-1 pl-5 opacity-90">
+                                {h.addedDarkPatterns.map((d, i) => (
+                                  <li key={i}>
+                                    <strong>{d.name}</strong>
+                                    {d.severity ? ` (${d.severity})` : ""}
+                                    {d.evidence ? ` — ${d.evidence}` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {h.addendum && (
+                            <div>
+                              <div className="loading-label mb-1">Added to the post</div>
+                              <p className="whitespace-pre-wrap opacity-90">{h.addendum}</p>
+                            </div>
+                          )}
+                          {h.addedJtbd.length === 0 &&
+                            h.addedDarkPatterns.length === 0 &&
+                            !h.metricsUpdated &&
+                            !h.addendum && (
+                              <p className="opacity-70">
+                                This refinement did not add any new structured items.
+                              </p>
+                            )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
 
           {sources.length > 0 && (
             <details className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 [&_summary::-webkit-details-marker]:hidden">

@@ -55,6 +55,7 @@ export type Database = {
           product_name: string
           product_url: string | null
           public: boolean
+          refinements: Json
           screenshot_url: string | null
           sources: Json
           updated_at: string
@@ -70,6 +71,7 @@ export type Database = {
           product_name: string
           product_url?: string | null
           public?: boolean
+          refinements?: Json
           screenshot_url?: string | null
           sources?: Json
           updated_at?: string
@@ -85,6 +87,7 @@ export type Database = {
           product_name?: string
           product_url?: string | null
           public?: boolean
+          refinements?: Json
           screenshot_url?: string | null
           sources?: Json
           updated_at?: string
