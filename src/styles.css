@@ -655,3 +655,30 @@
   background: rgba(255, 255, 255, 0.08);
   color: #d4cfc9;
 }
+
+.quality-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.quality-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, oklch(0.72 0.13 78), oklch(0.88 0.15 92));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.quality-score {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: inline-block;
+}
+.score-bump {
+  animation: score-pulse 1.2s ease-out;
+}
+@keyframes score-pulse {
+  0% { transform: scale(1); text-shadow: none; }
+  30% { transform: scale(1.35); text-shadow: 0 0 18px oklch(0.85 0.15 90 / 0.8); }
+  100% { transform: scale(1); text-shadow: none; }
+}
