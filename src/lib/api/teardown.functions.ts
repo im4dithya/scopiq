@@ -367,3 +367,114 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     return { status: "valid" as const, post, insights, sources, analysis, message: null };
   });
 
+
+export const refineTeardown = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      appName: z.string().trim().min(1).max(200),
+      productUrl: z
+        .string()
+        .trim()
+        .max(500)
+        .refine((v) => v === "" || /^https?:\/\/.+/i.test(v), {
+          message: "Must be a valid http(s) URL",
+        })
+        .optional()
+        .default(""),
+      existingPost: z.string().trim().min(1).max(20000),
+      existingAnalysis: z
+        .object({
+          anchors: z.array(z.record(z.string(), z.unknown())).max(10).optional().default([]),
+          jtbd: z.array(z.record(z.string(), z.unknown())).max(10).optional().default([]),
+          metrics: z.record(z.string(), z.unknown()).nullable().optional().default(null),
+          darkPatterns: z.array(z.record(z.string(), z.unknown())).max(10).optional().default([]),
+        })
+        .optional()
+        .default({ anchors: [], jtbd: [], metrics: null, darkPatterns: [] }),
+      refinementRequest: z.string().trim().min(3).max(200),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("AI gateway not configured");
+
+    const systemPrompt = `You are a product management expert extending an existing LinkedIn product teardown.
+
+You will be given: the product, the already-generated post, the already-generated analysis JSON, and a specific refinement request from the user.
+
+YOUR TASK: produce ONLY NEW content that satisfies the refinement request. Do not repeat, restate, or rewrite what already exists.
+
+RESPOND WITH VALID JSON ONLY — no markdown fences, no prose outside the JSON. Shape:
+{"jtbd":[{"job":"When [situation], I want to [motivation], so I can [outcome]","persona":string,"gap":string}],"metrics":{"northStar":{"name":string,"why":string},"supporting":[{"name":string,"definition":string,"target":string}]},"darkPatterns":[{"name":string,"severity":"low"|"medium"|"high","evidence":string,"fix":string}],"addendum":string}
+
+RULES:
+- "jtbd" and "darkPatterns" contain ONLY NEW items to append (0-3 each). Return [] when the refinement request gives no genuine grounds for new items.
+- "metrics" is the updated measurement strategy if the refinement changes it; otherwise return null.
+- "anchors" must be [] — no new visual anchors here.
+- "addendum" is a short, post-worthy paragraph (60-120 words) in the SAME voice as the existing post (sharp, curious CS student learning PM), directly answering the refinement request. No hashtags, no sign-off.
+
+ANTI-HALLUCINATION RULES (STRICT):
+- Base every claim on verifiable facts about the real product or on the existing post/analysis. Do not invent features, pricing, funding, headcount, launch dates, integrations, or partnerships.
+- Never fabricate quotes, statistics, review counts, star ratings, or user numbers.
+- Only report dark patterns you have real grounds for; return [] otherwise.
+- If you are not sure about a specific fact, speak in terms of the general product experience instead of stating it.
+- Prefer concrete UI/UX and strategy observations over vague marketing claims.`;
+
+    const userPrompt = `PRODUCT: ${data.appName}${data.productUrl ? ` (${data.productUrl})` : ""}
+
+EXISTING POST:
+${data.existingPost}
+
+EXISTING ANALYSIS JSON:
+${JSON.stringify(data.existingAnalysis)}
+
+REFINEMENT REQUEST: ${data.refinementRequest}`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`AI gateway error ${res.status}`, await res.text());
+      throw new Error("The AI service is unavailable right now. Please try again.");
+    }
+
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const fullText = json.choices?.[0]?.message?.content ?? "";
+
+    let parsed: RawParsed & { addendum?: unknown } = {};
+    try {
+      const cleaned = fullText
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+      parsed = JSON.parse(cleaned) as RawParsed & { addendum?: unknown };
+    } catch {
+      return {
+        status: "invalid" as const,
+        addendum: "",
+        analysis: emptyAnalysis(),
+        message: "Could not parse model response. Please try again.",
+      };
+    }
+
+    const normalized = normalizeAnalysis(parsed, false);
+    const addendum = typeof parsed.addendum === "string" ? parsed.addendum.trim() : "";
+
+    return {
+      status: "valid" as const,
+      addendum,
+      analysis: normalized,
+      message: null,
+    };
+  });
