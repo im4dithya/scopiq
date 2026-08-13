@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 export type Insight = { type: "good" | "improve"; text: string };
 export type Source = { url: string; title: string };
 
+export type RefinementEntry = {
+  request: string;
+  at: string;
+  addedJtbd: { job: string; persona?: string; gap?: string }[];
+  addedDarkPatterns: { name: string; severity?: string; evidence?: string; fix?: string }[];
+  metricsUpdated: boolean;
+  addendum: string;
+};
+
 export type SavedTeardown = {
   id: string;
   user_id: string;
@@ -14,6 +23,7 @@ export type SavedTeardown = {
   post: string;
   insights: Insight[];
   sources: Source[];
+  refinements: RefinementEntry[];
   public: boolean;
   created_at: string;
 };
@@ -47,6 +57,7 @@ export async function saveTeardown(input: {
   post: string;
   insights: Insight[];
   sources: Source[];
+  refinements?: RefinementEntry[];
 }) {
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) throw new Error("You need to be signed in to save teardowns.");
@@ -73,6 +84,7 @@ export async function saveTeardown(input: {
       post: input.post,
       insights: input.insights,
       sources: input.sources,
+      refinements: input.refinements ?? [],
     })
     .select("id")
     .single();
@@ -132,6 +144,11 @@ export async function updateTeardown(
 
   const { error } = await supabase.from("teardowns").update(update).eq("id", id);
   if (error) throw new Error("Could not save your changes. Please try again.");
+}
+
+export async function saveRefinementHistory(id: string, refinements: RefinementEntry[]) {
+  const { error } = await supabase.from("teardowns").update({ refinements }).eq("id", id);
+  if (error) throw new Error("Could not save the refinement history.");
 }
 
 export async function setTeardownPublic(id: string, isPublic: boolean) {
