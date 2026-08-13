@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { generateTeardown, refineTeardown } from "@/lib/api/teardown.functions";
 import { useSession } from "@/hooks/useSession";
-import { saveTeardown } from "@/lib/teardowns";
+import { saveTeardown, saveRefinementHistory, type RefinementEntry } from "@/lib/teardowns";
 import { analyzeOmniInput } from "@/lib/omni-input";
 import { AnalysisDashboard } from "@/components/AnalysisDashboard";
 import { emptyAnalysis, type TeardownAnalysis } from "@/lib/analysis";
@@ -82,6 +82,8 @@ export function TeardownView() {
   const [refineText, setRefineText] = useState("");
   const [refining, setRefining] = useState(false);
   const [scoreBumped, setScoreBumped] = useState(false);
+  const [history, setHistory] = useState<RefinementEntry[]>([]);
+  const [openEntry, setOpenEntry] = useState<number | null>(0);
   const msgTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   type ScreenshotState = {
@@ -176,6 +178,8 @@ export function TeardownView() {
     setActiveChip(null);
     setError(null);
     setRefineText("");
+    setHistory([]);
+    setOpenEntry(0);
     clearScreenshot();
   }
 
@@ -256,6 +260,7 @@ export function TeardownView() {
         post,
         insights,
         sources,
+        refinements: history,
       });
       setSavedId(id);
       toast.success("Saved to your history.");
@@ -312,6 +317,29 @@ export function TeardownView() {
         ],
       };
       const nextPost = result.addendum ? `${post}\n\n${result.addendum}` : post;
+      const addedJtbd = merged.jtbd.slice(analysis.jtbd.length);
+      const addedDarkPatterns = merged.darkPatterns.slice(analysis.darkPatterns.length);
+      const entry: RefinementEntry = {
+        request,
+        at: new Date().toISOString(),
+        addedJtbd: addedJtbd.map((j) => ({ job: j.job, persona: j.persona, gap: j.gap })),
+        addedDarkPatterns: addedDarkPatterns.map((d) => ({
+          name: d.name,
+          severity: d.severity,
+          evidence: d.evidence,
+          fix: d.fix,
+        })),
+        metricsUpdated: Boolean(result.analysis.metrics),
+        addendum: result.addendum,
+      };
+      const nextHistory = [...history, entry];
+      setHistory(nextHistory);
+      setOpenEntry(nextHistory.length - 1);
+      if (savedId) {
+        void saveRefinementHistory(savedId, nextHistory).catch(() => {
+          toast.error("Refinement saved locally, but history could not be synced.");
+        });
+      }
       setAnalysis(merged);
       setPost(nextPost);
       setRefineText("");
