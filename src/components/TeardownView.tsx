@@ -243,12 +243,11 @@ export function TeardownView() {
     setSources([]);
     setAnalysis(emptyAnalysis());
 
-    let i = 0;
-    setLoadingMsg(LOADING_MESSAGES[0]);
+    setStage(0);
     msgTimer.current = setInterval(() => {
-      i = (i + 1) % LOADING_MESSAGES.length;
-      setLoadingMsg(LOADING_MESSAGES[i]);
-    }, 1800);
+      setStage((s) => (s < STAGES.length - 1 ? s + 1 : s));
+    }, STAGE_MS);
+
 
     try {
       const parsed = analyzeOmniInput(appName);
