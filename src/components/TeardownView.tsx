@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } from "react";
-import { ImageUp, X } from "lucide-react";
+import { ImageUp, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { generateTeardown, refineTeardown } from "@/lib/api/teardown.functions";
