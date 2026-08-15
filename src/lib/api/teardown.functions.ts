@@ -538,7 +538,6 @@ REFINEMENT REQUEST: ${data.refinementRequest}`;
         addendum: "",
         analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
-        webSearchStatus,
       };
     }
 
