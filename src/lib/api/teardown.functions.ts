@@ -336,7 +336,11 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     }
     const reviewsBlock = formatReviewsBlock(reviews, reviewSource);
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.${reviewsBlock}`;
+    const researchBlock = grounded
+      ? `\n\nVERIFIED WEB RESEARCH (treat as ground truth, prefer these specifics over general knowledge):\n${webBriefing}`
+      : "";
+
+    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` IMPORTANT — the post must specifically address: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.${researchBlock}${reviewsBlock}`;
 
     const userContent: unknown = data.screenshot
       ? [
