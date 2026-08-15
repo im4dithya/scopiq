@@ -195,7 +195,10 @@ GOOD: [something done well]
 IMPROVE: [something to improve]
 IMPROVE: [something to improve]
 
-ALSO FOR VALID RESPONSES, fill these analysis fields:
+ALSO FOR VALID RESPONSES, fill these analysis fields.
+If the user's focus override (notes) is unrelated to a given field below, return an empty/minimal result for that field rather than inventing generic content to fill it — accuracy to the actual request matters more than filling every field.
+
+
 
 1. "anchors" — Visual Anchoring. 3-5 objects: {"label":string,"note":string,"kind":"good"|"improve","x":number,"y":number,"w":number,"h":number}
    x/y/w/h are PERCENTAGES (0-100) of the image, marking the exact region the observation refers to.
