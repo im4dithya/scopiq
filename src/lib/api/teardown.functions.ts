@@ -168,6 +168,24 @@ export const generateTeardown = createServerFn({ method: "POST" })
 
     const isWebProduct = Boolean(detectedUrl) || looksLikeUrl;
 
+    // Separate research pass: strict JSON mode on the main call suppresses real
+    // search behaviour, so grounding happens here in plain-text mode first.
+    let webBriefing = "";
+    let webSources: { url: string; title: string }[] = [];
+    if (data.useWebSearch) {
+      const research = await fetchWebResearch(cleanedProductName, detectedUrl, apiKey);
+      webBriefing = research.briefing;
+      webSources = research.sources;
+    }
+    const grounded = data.useWebSearch && webBriefing.length > 0;
+    const webSearchStatus: "grounded" | "no_results" | "disabled" = !data.useWebSearch
+      ? "disabled"
+      : grounded
+        ? "grounded"
+        : "no_results";
+
+
+
     const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence.
 ${
   data.notes
