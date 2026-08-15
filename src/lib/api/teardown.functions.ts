@@ -169,6 +169,14 @@ export const generateTeardown = createServerFn({ method: "POST" })
     const isWebProduct = Boolean(detectedUrl) || looksLikeUrl;
 
     const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence.
+${
+  data.notes
+    ? `USER FOCUS OVERRIDE (read this first — highest priority):
+The student specifically asked for: "${data.notes}"
+The post's core content, and BOTH "what they did well" / "what I'd change" observations, must center on exactly this request. Do not default to generic PM framework commentary (JTBD, monetization, retention, dark patterns) unless it is directly relevant to what was asked. If the request is narrow (e.g. only visual/color design, only a specific screen, only pricing), stay narrow — depth on the actual ask beats breadth across unrelated categories.`
+    : ""
+}
+
 
 STEP 1 — VALIDATE THE INPUT:
 Decide whether the product the user provided refers to a real, identifiable product, app, website, tool, or service you have genuine knowledge of (or, if a URL/screenshot is provided, clearly resolves to a real product).
