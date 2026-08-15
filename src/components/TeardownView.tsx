@@ -273,6 +273,7 @@ export function TeardownView() {
         setPost(null);
         setInsights([]);
         setSources([]);
+        setWebSearchStatus(result.webSearchStatus ?? "disabled");
         setAnalysis(emptyAnalysis());
       } else {
         setPost(result.post);
