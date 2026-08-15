@@ -407,6 +407,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         sources: [] as { url: string; title: string }[],
         analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
+        webSearchStatus,
       };
     }
 
@@ -418,6 +419,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         sources: [] as { url: string; title: string }[],
         analysis: emptyAnalysis(),
         message: parsed.message || "We couldn't recognize that as a real product.",
+        webSearchStatus,
       };
     }
 
@@ -435,7 +437,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
 
     const analysis = normalizeAnalysis(parsed, Boolean(data.screenshot));
 
-    return { status: "valid" as const, post, insights, sources, analysis, message: null };
+    return { status: "valid" as const, post, insights, sources, analysis, message: null, webSearchStatus };
   });
 
 
@@ -536,6 +538,7 @@ REFINEMENT REQUEST: ${data.refinementRequest}`;
         addendum: "",
         analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
+        webSearchStatus,
       };
     }
 
