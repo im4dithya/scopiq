@@ -109,6 +109,69 @@ function formatReviewsBlock(reviews: Review[], source: "live" | "sample"): strin
 }
 
 
+// Dedicated web-search pass. Plain text (no json_object), so the model can
+// actually use the search plugin instead of being locked into JSON mode.
+async function fetchWebResearch(
+  productName: string,
+  url: string,
+  apiKey: string,
+): Promise<{ briefing: string; sources: { url: string; title: string }[] }> {
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash:online",
+        plugins: [
+          {
+            id: "web",
+            max_results: 5,
+            search_prompt: `Search for real, current information about "${productName}"${url ? ` (${url})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews.`,
+          },
+        ],
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a research assistant. Search for and report real, current facts about the given product: core features, pricing/plans, recent updates or news, and general reception. Be concise — 150-250 words, plain prose, no speculation. If search returns nothing useful, say so explicitly rather than filling in from general knowledge.",
+          },
+          {
+            role: "user",
+            content: `Product: ${productName}${url ? ` (${url})` : ""}`,
+          },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error(`Web research gateway error ${res.status}`);
+      return { briefing: "", sources: [] };
+    }
+    const json = (await res.json()) as {
+      choices?: {
+        message?: {
+          content?: string;
+          annotations?: Array<{ type?: string; url_citation?: { url?: string; title?: string } }>;
+        };
+      }[];
+    };
+    const message = json.choices?.[0]?.message;
+    const briefing = (message?.content ?? "").trim();
+    const sources = (message?.annotations ?? [])
+      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
+      .map((a) => ({
+        url: a.url_citation!.url as string,
+        title: (a.url_citation!.title || a.url_citation!.url) as string,
+      }))
+      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
+
+    if (briefing.length < 40) return { briefing: "", sources: [] };
+    return { briefing, sources };
+  } catch {
+    return { briefing: "", sources: [] };
+  }
+}
+
+
 export const generateTeardown = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
