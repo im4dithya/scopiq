@@ -380,29 +380,14 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     }
 
     const json = (await res.json()) as {
-      choices: {
-        message: {
-          content: string;
-          annotations?: Array<{
-            type?: string;
-            url_citation?: { url?: string; title?: string };
-          }>;
-        };
-      }[];
+      choices: { message: { content: string } }[];
     };
     const message = json.choices?.[0]?.message;
     const fullText = message?.content ?? "";
 
-    // Extract web-search citations (OpenRouter surfaces them as message.annotations
-    // with type "url_citation" when the :online / web plugin is used).
-    const sources = (message?.annotations ?? [])
-      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
-      .map((a) => ({
-        url: a.url_citation!.url as string,
-        title: (a.url_citation!.title || a.url_citation!.url) as string,
-      }))
-      // dedupe by url
-      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
+    // Citations come from the separate research pass.
+    const sources = webSources;
+
 
     // Parse the structured JSON response. Strip markdown fences if the model
     // adds them despite instructions.
