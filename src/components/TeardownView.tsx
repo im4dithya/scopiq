@@ -115,7 +115,7 @@ export function TeardownView() {
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const [stage, setStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
