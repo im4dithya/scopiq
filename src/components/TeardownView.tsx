@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, type MouseEvent, type ChangeEvent, type DragEvent } from "react";
-import { ImageUp, X } from "lucide-react";
+import { ImageUp, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { generateTeardown, refineTeardown } from "@/lib/api/teardown.functions";
@@ -31,13 +31,56 @@ const FOCUS_OPTIONS: { value: string; label: string }[] = [
   { value: "monetization", label: "Monetization" },
 ];
 
-const LOADING_MESSAGES = [
-  "Thinking like a PM...",
-  "Analysing user flows...",
-  "Finding the pain points...",
-  "Crafting your post...",
-  "Almost there...",
+const STAGES = [
+  "Scraping product signals",
+  "Analyzing UX patterns",
+  "Synthesizing PM frameworks",
+  "Finalizing teardown",
 ];
+const STAGE_MS = 4000;
+
+function StagedProgress({ stage }: { stage: number }) {
+  return (
+    <div className="glass-card mx-auto my-10 max-w-md p-6">
+      <div className="loading-label mb-4">Analysing product</div>
+      <ol className="space-y-3">
+        {STAGES.map((label, i) => {
+          const done = i < stage;
+          const active = i === stage;
+          return (
+            <li key={label} className="flex items-center gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                {done ? (
+                  <Check className="h-4 w-4" style={{ color: "var(--gold-2)" }} />
+                ) : active ? (
+                  <span
+                    className="h-2.5 w-2.5 animate-ping rounded-full"
+                    style={{ background: "var(--gold-2)" }}
+                  />
+                ) : (
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: "rgba(212,207,201,0.25)" }}
+                  />
+                )}
+              </span>
+              <span
+                className="mono-sub"
+                style={{
+                  opacity: done ? 0.85 : active ? 1 : 0.4,
+                  color: active ? "var(--gold-2)" : undefined,
+                }}
+              >
+                {label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 
 type Insight = { type: "good" | "improve"; text: string };
 type Source = { url: string; title: string };
@@ -72,7 +115,7 @@ export function TeardownView() {
   const [activeChip, setActiveChip] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const [stage, setStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -200,12 +243,11 @@ export function TeardownView() {
     setSources([]);
     setAnalysis(emptyAnalysis());
 
-    let i = 0;
-    setLoadingMsg(LOADING_MESSAGES[0]);
+    setStage(0);
     msgTimer.current = setInterval(() => {
-      i = (i + 1) % LOADING_MESSAGES.length;
-      setLoadingMsg(LOADING_MESSAGES[i]);
-    }, 1800);
+      setStage((s) => (s < STAGES.length - 1 ? s + 1 : s));
+    }, STAGE_MS);
+
 
     try {
       const parsed = analyzeOmniInput(appName);
@@ -241,6 +283,7 @@ export function TeardownView() {
       setError("Something went wrong. Please try again in a moment.");
     } finally {
       if (msgTimer.current) clearInterval(msgTimer.current);
+      setStage(STAGES.length);
       setLoading(false);
     }
   }
@@ -522,13 +565,8 @@ export function TeardownView() {
         </section>
       )}
 
-      {loading && (
-        <div className="py-12 text-center">
-          <div className="spinner mx-auto mb-4" />
-          <div className="loading-label">Analysing product</div>
-          <div className="mono-sub mt-1">{loadingMsg}</div>
-        </div>
-      )}
+      {loading && <StagedProgress stage={stage} />}
+
 
       {post && !loading && (
         <section>
