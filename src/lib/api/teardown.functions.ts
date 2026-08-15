@@ -109,6 +109,69 @@ function formatReviewsBlock(reviews: Review[], source: "live" | "sample"): strin
 }
 
 
+// Dedicated web-search pass. Plain text (no json_object), so the model can
+// actually use the search plugin instead of being locked into JSON mode.
+async function fetchWebResearch(
+  productName: string,
+  url: string,
+  apiKey: string,
+): Promise<{ briefing: string; sources: { url: string; title: string }[] }> {
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash:online",
+        plugins: [
+          {
+            id: "web",
+            max_results: 5,
+            search_prompt: `Search for real, current information about "${productName}"${url ? ` (${url})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews.`,
+          },
+        ],
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a research assistant. Search for and report real, current facts about the given product: core features, pricing/plans, recent updates or news, and general reception. Be concise — 150-250 words, plain prose, no speculation. If search returns nothing useful, say so explicitly rather than filling in from general knowledge.",
+          },
+          {
+            role: "user",
+            content: `Product: ${productName}${url ? ` (${url})` : ""}`,
+          },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error(`Web research gateway error ${res.status}`);
+      return { briefing: "", sources: [] };
+    }
+    const json = (await res.json()) as {
+      choices?: {
+        message?: {
+          content?: string;
+          annotations?: Array<{ type?: string; url_citation?: { url?: string; title?: string } }>;
+        };
+      }[];
+    };
+    const message = json.choices?.[0]?.message;
+    const briefing = (message?.content ?? "").trim();
+    const sources = (message?.annotations ?? [])
+      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
+      .map((a) => ({
+        url: a.url_citation!.url as string,
+        title: (a.url_citation!.title || a.url_citation!.url) as string,
+      }))
+      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
+
+    if (briefing.length < 40) return { briefing: "", sources: [] };
+    return { briefing, sources };
+  } catch {
+    return { briefing: "", sources: [] };
+  }
+}
+
+
 export const generateTeardown = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
@@ -168,7 +231,33 @@ export const generateTeardown = createServerFn({ method: "POST" })
 
     const isWebProduct = Boolean(detectedUrl) || looksLikeUrl;
 
+    // Separate research pass: strict JSON mode on the main call suppresses real
+    // search behaviour, so grounding happens here in plain-text mode first.
+    let webBriefing = "";
+    let webSources: { url: string; title: string }[] = [];
+    if (data.useWebSearch) {
+      const research = await fetchWebResearch(cleanedProductName, detectedUrl, apiKey);
+      webBriefing = research.briefing;
+      webSources = research.sources;
+    }
+    const grounded = data.useWebSearch && webBriefing.length > 0;
+    const webSearchStatus: "grounded" | "no_results" | "disabled" = !data.useWebSearch
+      ? "disabled"
+      : grounded
+        ? "grounded"
+        : "no_results";
+
+
+
     const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence.
+${
+  data.notes
+    ? `USER FOCUS OVERRIDE (read this first — highest priority):
+The student specifically asked for: "${data.notes}"
+The post's core content, and BOTH "what they did well" / "what I'd change" observations, must center on exactly this request. Do not default to generic PM framework commentary (JTBD, monetization, retention, dark patterns) unless it is directly relevant to what was asked. If the request is narrow (e.g. only visual/color design, only a specific screen, only pricing), stay narrow — depth on the actual ask beats breadth across unrelated categories.`
+    : ""
+}
+
 
 STEP 1 — VALIDATE THE INPUT:
 Decide whether the product the user provided refers to a real, identifiable product, app, website, tool, or service you have genuine knowledge of (or, if a URL/screenshot is provided, clearly resolves to a real product).
@@ -187,7 +276,10 @@ GOOD: [something done well]
 IMPROVE: [something to improve]
 IMPROVE: [something to improve]
 
-ALSO FOR VALID RESPONSES, fill these analysis fields:
+ALSO FOR VALID RESPONSES, fill these analysis fields.
+If the user's focus override (notes) is unrelated to a given field below, return an empty/minimal result for that field rather than inventing generic content to fill it — accuracy to the actual request matters more than filling every field.
+
+
 
 1. "anchors" — Visual Anchoring. 3-5 objects: {"label":string,"note":string,"kind":"good"|"improve","x":number,"y":number,"w":number,"h":number}
    x/y/w/h are PERCENTAGES (0-100) of the image, marking the exact region the observation refers to.
@@ -215,7 +307,7 @@ POST REQUIREMENTS (valid only):
 
 ANTI-HALLUCINATION RULES (STRICT):
 - Base every claim in the post on (a) verifiable facts about the real product, (b) the attached screenshot if any, or (c) the provided user reviews. Do not invent features, pricing, funding, headcount, launch dates, integrations, or partnerships.
-- ${data.useWebSearch ? "You have web search grounding enabled — use it to look up current, real information (features, recent updates, reviews, pricing/plans) about the product BEFORE writing. Prefer specifics you actually found over generic PM tropes." : "You do NOT have web search enabled — stay strictly within what you genuinely know about this product from training data plus the provided reviews/screenshot. If you are not sure about a specific fact (e.g. exact pricing tier, a specific feature name, a recent update), do NOT state it. Speak in terms of the general product experience instead."}
+- ${grounded ? "A verified web research briefing is included in the user message — treat it as ground truth and prefer its specifics over general knowledge or generic PM tropes." : "You do NOT have web search results — stay strictly within what you genuinely know about this product from training data plus the provided reviews/screenshot. If you are not sure about a specific fact (e.g. exact pricing tier, a specific feature name, a recent update), do NOT state it. Speak in terms of the general product experience instead."}
 - If you cannot form 2-3 concrete, product-specific observations without inventing details, return status="invalid" with message="Not enough verifiable information about this product to write a grounded teardown."
 - Never fabricate quotes, statistics, review counts, star ratings, or user numbers.
 - Prefer concrete UI/UX observations ("the onboarding asks for 4 permissions upfront") over vague marketing claims ("industry-leading experience").
@@ -244,7 +336,11 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
     }
     const reviewsBlock = formatReviewsBlock(reviews, reviewSource);
 
-    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` The student noted: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.${reviewsBlock}`;
+    const researchBlock = grounded
+      ? `\n\nVERIFIED WEB RESEARCH (treat as ground truth, prefer these specifics over general knowledge):\n${webBriefing}`
+      : "";
+
+    const userPrompt = `Generate a LinkedIn product teardown post about ${productContext}, focusing on the ${focusLabel}.${data.notes ? ` IMPORTANT — the post must specifically address: "${data.notes}"` : ""}${data.screenshot ? " A screenshot of the product UI is attached — analyse its visual design directly." : ""} Make it feel authentic and student-perspective.${researchBlock}${reviewsBlock}`;
 
     const userContent: unknown = data.screenshot
       ? [
@@ -266,21 +362,10 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        // OpenRouter :online suffix enables web search grounding for this call.
-        // See https://openrouter.ai/docs/features/web-search
-        model: data.useWebSearch ? "google/gemini-2.5-flash:online" : "google/gemini-2.5-flash",
+        // Web search runs as a separate research pass (fetchWebResearch) — this
+        // call is always the plain model so strict JSON mode stays reliable.
+        model: "google/gemini-2.5-flash",
         response_format: { type: "json_object" },
-        ...(data.useWebSearch
-          ? {
-              plugins: [
-                {
-                  id: "web",
-                  max_results: 5,
-                  search_prompt: `Search for real, current information about "${cleanedProductName}"${detectedUrl ? ` (${detectedUrl})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews. Use these facts to ground the teardown.`,
-                },
-              ],
-            }
-          : {}),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -288,35 +373,21 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
       }),
     });
 
+
     if (!res.ok) {
       const txt = await res.text();
       throw new Error(`AI gateway error ${res.status}: ${txt}`);
     }
 
     const json = (await res.json()) as {
-      choices: {
-        message: {
-          content: string;
-          annotations?: Array<{
-            type?: string;
-            url_citation?: { url?: string; title?: string };
-          }>;
-        };
-      }[];
+      choices: { message: { content: string } }[];
     };
     const message = json.choices?.[0]?.message;
     const fullText = message?.content ?? "";
 
-    // Extract web-search citations (OpenRouter surfaces them as message.annotations
-    // with type "url_citation" when the :online / web plugin is used).
-    const sources = (message?.annotations ?? [])
-      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
-      .map((a) => ({
-        url: a.url_citation!.url as string,
-        title: (a.url_citation!.title || a.url_citation!.url) as string,
-      }))
-      // dedupe by url
-      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
+    // Citations come from the separate research pass.
+    const sources = webSources;
+
 
     // Parse the structured JSON response. Strip markdown fences if the model
     // adds them despite instructions.
@@ -336,6 +407,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         sources: [] as { url: string; title: string }[],
         analysis: emptyAnalysis(),
         message: "Could not parse model response. Please try again.",
+        webSearchStatus,
       };
     }
 
@@ -347,6 +419,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
         sources: [] as { url: string; title: string }[],
         analysis: emptyAnalysis(),
         message: parsed.message || "We couldn't recognize that as a real product.",
+        webSearchStatus,
       };
     }
 
@@ -364,7 +437,7 @@ If a screenshot is provided, actively inspect its visual execution (layout, typo
 
     const analysis = normalizeAnalysis(parsed, Boolean(data.screenshot));
 
-    return { status: "valid" as const, post, insights, sources, analysis, message: null };
+    return { status: "valid" as const, post, insights, sources, analysis, message: null, webSearchStatus };
   });
 
 

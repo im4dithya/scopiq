@@ -120,6 +120,7 @@ export function TeardownView() {
   const [post, setPost] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
+  const [webSearchStatus, setWebSearchStatus] = useState<"grounded" | "no_results" | "disabled">("disabled");
   const [analysis, setAnalysis] = useState<TeardownAnalysis>(emptyAnalysis());
   const [copied, setCopied] = useState(false);
   const [refineText, setRefineText] = useState("");
@@ -272,11 +273,13 @@ export function TeardownView() {
         setPost(null);
         setInsights([]);
         setSources([]);
+        setWebSearchStatus(result.webSearchStatus ?? "disabled");
         setAnalysis(emptyAnalysis());
       } else {
         setPost(result.post);
         setInsights(result.insights);
         setSources(result.sources ?? []);
+        setWebSearchStatus(result.webSearchStatus ?? "disabled");
         setAnalysis(result.analysis ?? emptyAnalysis());
       }
     } catch {
@@ -764,6 +767,12 @@ export function TeardownView() {
                 })}
               </ol>
             </div>
+          )}
+
+          {webSearchStatus === "no_results" && (
+            <p className="mono-sub mt-4 text-xs opacity-60">
+              No live sources found for this product — generated from general knowledge instead.
+            </p>
           )}
 
           {sources.length > 0 && (
