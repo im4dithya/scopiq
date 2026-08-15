@@ -283,6 +283,7 @@ export function TeardownView() {
       setError("Something went wrong. Please try again in a moment.");
     } finally {
       if (msgTimer.current) clearInterval(msgTimer.current);
+      setStage(STAGES.length);
       setLoading(false);
     }
   }
