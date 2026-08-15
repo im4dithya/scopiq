@@ -564,13 +564,8 @@ export function TeardownView() {
         </section>
       )}
 
-      {loading && (
-        <div className="py-12 text-center">
-          <div className="spinner mx-auto mb-4" />
-          <div className="loading-label">Analysing product</div>
-          <div className="mono-sub mt-1">{loadingMsg}</div>
-        </div>
-      )}
+      {loading && <StagedProgress stage={stage} />}
+
 
       {post && !loading && (
         <section>
