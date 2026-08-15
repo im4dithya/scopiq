@@ -31,13 +31,56 @@ const FOCUS_OPTIONS: { value: string; label: string }[] = [
   { value: "monetization", label: "Monetization" },
 ];
 
-const LOADING_MESSAGES = [
-  "Thinking like a PM...",
-  "Analysing user flows...",
-  "Finding the pain points...",
-  "Crafting your post...",
-  "Almost there...",
+const STAGES = [
+  "Scraping product signals",
+  "Analyzing UX patterns",
+  "Synthesizing PM frameworks",
+  "Finalizing teardown",
 ];
+const STAGE_MS = 4000;
+
+function StagedProgress({ stage }: { stage: number }) {
+  return (
+    <div className="glass-card mx-auto my-10 max-w-md p-6">
+      <div className="loading-label mb-4">Analysing product</div>
+      <ol className="space-y-3">
+        {STAGES.map((label, i) => {
+          const done = i < stage;
+          const active = i === stage;
+          return (
+            <li key={label} className="flex items-center gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                {done ? (
+                  <Check className="h-4 w-4" style={{ color: "var(--gold-2)" }} />
+                ) : active ? (
+                  <span
+                    className="h-2.5 w-2.5 animate-ping rounded-full"
+                    style={{ background: "var(--gold-2)" }}
+                  />
+                ) : (
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: "rgba(212,207,201,0.25)" }}
+                  />
+                )}
+              </span>
+              <span
+                className="mono-sub"
+                style={{
+                  opacity: done ? 0.85 : active ? 1 : 0.4,
+                  color: active ? "var(--gold-2)" : undefined,
+                }}
+              >
+                {label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 
 type Insight = { type: "good" | "improve"; text: string };
 type Source = { url: string; title: string };
