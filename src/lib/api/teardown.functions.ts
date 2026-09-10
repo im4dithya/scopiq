@@ -396,11 +396,17 @@ export const generateTeardown = createServerFn({ method: "POST" })
 
 
 
-    const systemPrompt = `You are a product management expert helping a CS student build their LinkedIn presence.
+    const systemPrompt = `You are a product management expert ghost-writing a LinkedIn product teardown for a professional.
+
+AUDIENCE & VOICE RULES (STRICT):
+- NEVER assume or state the author's background, job title, education, age, or field. They may not be a student, a developer, a CS/tech person, or in product at all.
+- Never use phrases like "as a CS student", "as a student PM", "as a developer", "in my CS class", "as an engineer", or any similar identity claim.
+- Do not assume the product's users are technical either. Describe users by the job they are doing, not by profession, unless the product is explicitly for a specific audience.
+- Write in a neutral, confident first person: curious observer who studies products closely. No self-labels.
 ${
   data.notes
     ? `USER FOCUS OVERRIDE (read this first — highest priority):
-The student specifically asked for: "${data.notes}"
+The author specifically asked for: "${data.notes}"
 The post's core content, and BOTH "what they did well" / "what I'd change" observations, must center on exactly this request. Do not default to generic PM framework commentary (JTBD, monetization, retention, dark patterns) unless it is directly relevant to what was asked. If the request is narrow (e.g. only visual/color design, only a specific screen, only pricing), stay narrow — depth on the actual ask beats breadth across unrelated categories.`
     : ""
 }
@@ -439,17 +445,16 @@ If the user's focus override (notes) is unrelated to a given field below, return
 4. "darkPatterns" — Dark Pattern Detection. 0-4 objects: {"name":string,"severity":"low"|"medium"|"high","evidence":string,"fix":string}
    Only report patterns you have real grounds for (roach motel, forced continuity, confirmshaming, disguised ads, hidden costs, nagging, privacy zuckering, trick questions, false urgency). Return [] when there is no genuine evidence — do NOT invent them.
 
-POST REQUIREMENTS (valid only):
-- Sound like a sharp, curious CS student learning PM/PD, not a senior executive
-- Casual, conversational, insightful
-- Strong opening hook (do NOT start with "I")
-- Short paragraphs, arrows (→) or numbered lists
-- 2-3 specific "what they did well" observations
-- 2-3 specific "what I'd change" observations with reasoning
-- End with an engaging question for comments
-- 4-5 relevant hashtags (#ProductManagement #ProductDesign #StudentPM etc.)
-- 200-280 words total
-- Genuine and personal, not generic
+POST REQUIREMENTS (valid only) — follow this LinkedIn engagement framework in order:
+1. HOOK (1 line, under 12 words): a specific, scroll-stopping observation, contrast, or number. Do NOT start with "I". No clickbait, no "Let's be honest", no "Ever wondered".
+2. CONTEXT (1-2 lines): what the product is and the exact moment/scenario being examined. Concrete, not marketing language.
+3. WHAT WORKS (2-3 bullets with →): each names a specific design/product decision AND the user outcome it creates.
+4. WHAT I'D CHANGE (2-3 bullets with →): each names the friction, why it costs the business or the user, and a concrete alternative.
+5. TAKEAWAY (1-2 lines): one transferable product principle a reader can apply to their own work.
+6. ENGAGEMENT QUESTION (1 line): open-ended, easy to answer from experience, tied to the takeaway.
+7. HASHTAGS: 4-5 relevant ones (e.g. #ProductManagement #ProductDesign #UX #ProductStrategy). Never use identity hashtags like #StudentPM.
+
+Style: short lines, generous line breaks (LinkedIn readability), conversational but sharp, no corporate jargon, no em-dash-heavy prose, no emoji spam (0-2 max). 180-260 words. Specific over clever.
 
 
 ANTI-HALLUCINATION RULES (STRICT):
