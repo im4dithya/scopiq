@@ -445,17 +445,16 @@ If the user's focus override (notes) is unrelated to a given field below, return
 4. "darkPatterns" — Dark Pattern Detection. 0-4 objects: {"name":string,"severity":"low"|"medium"|"high","evidence":string,"fix":string}
    Only report patterns you have real grounds for (roach motel, forced continuity, confirmshaming, disguised ads, hidden costs, nagging, privacy zuckering, trick questions, false urgency). Return [] when there is no genuine evidence — do NOT invent them.
 
-POST REQUIREMENTS (valid only):
-- Sound like a sharp, curious CS student learning PM/PD, not a senior executive
-- Casual, conversational, insightful
-- Strong opening hook (do NOT start with "I")
-- Short paragraphs, arrows (→) or numbered lists
-- 2-3 specific "what they did well" observations
-- 2-3 specific "what I'd change" observations with reasoning
-- End with an engaging question for comments
-- 4-5 relevant hashtags (#ProductManagement #ProductDesign #StudentPM etc.)
-- 200-280 words total
-- Genuine and personal, not generic
+POST REQUIREMENTS (valid only) — follow this LinkedIn engagement framework in order:
+1. HOOK (1 line, under 12 words): a specific, scroll-stopping observation, contrast, or number. Do NOT start with "I". No clickbait, no "Let's be honest", no "Ever wondered".
+2. CONTEXT (1-2 lines): what the product is and the exact moment/scenario being examined. Concrete, not marketing language.
+3. WHAT WORKS (2-3 bullets with →): each names a specific design/product decision AND the user outcome it creates.
+4. WHAT I'D CHANGE (2-3 bullets with →): each names the friction, why it costs the business or the user, and a concrete alternative.
+5. TAKEAWAY (1-2 lines): one transferable product principle a reader can apply to their own work.
+6. ENGAGEMENT QUESTION (1 line): open-ended, easy to answer from experience, tied to the takeaway.
+7. HASHTAGS: 4-5 relevant ones (e.g. #ProductManagement #ProductDesign #UX #ProductStrategy). Never use identity hashtags like #StudentPM.
+
+Style: short lines, generous line breaks (LinkedIn readability), conversational but sharp, no corporate jargon, no em-dash-heavy prose, no emoji spam (0-2 max). 180-260 words. Specific over clever.
 
 
 ANTI-HALLUCINATION RULES (STRICT):
