@@ -109,35 +109,193 @@ function formatReviewsBlock(reviews: Review[], source: "live" | "sample"): strin
 }
 
 
-// Dedicated web-search pass. Plain text (no json_object), so the model can
-// actually use the search plugin instead of being locked into JSON mode.
+type WebSource = { url: string; title: string };
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fetchTextPage(url: string, limit = 4000): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!res.ok) return "";
+    const ct = res.headers.get("content-type") ?? "";
+    if (!/text\/html|text\/plain/i.test(ct)) return "";
+    const text = htmlToText(await res.text());
+    return text.slice(0, limit);
+  } catch {
+    return "";
+  }
+}
+
+// Real, reachable public sources — the AI gateway has no live-search model, so
+// grounding material is gathered here first and then condensed by the model.
+async function gatherResearchMaterial(
+  productName: string,
+  url: string,
+): Promise<{ material: string; sources: WebSource[] }> {
+  const blocks: string[] = [];
+  const sources: WebSource[] = [];
+
+  const tasks: Promise<void>[] = [];
+
+  // 1. The product's own site (homepage + likely pricing page).
+  if (url) {
+    let origin = "";
+    try {
+      origin = new URL(url).origin;
+    } catch {
+      origin = "";
+    }
+    const pages = origin ? [url, `${origin}/pricing`] : [url];
+    for (const page of pages) {
+      tasks.push(
+        fetchTextPage(page).then((text) => {
+          if (text.length > 300) {
+            blocks.push(`SOURCE — official site (${page}):\n${text}`);
+            sources.push({ url: page, title: `${productName} — official site` });
+          }
+        }),
+      );
+    }
+  }
+
+  // 2. Apple App Store listing (description, price, rating, latest release notes).
+  tasks.push(
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://itunes.apple.com/search?term=${encodeURIComponent(productName)}&entity=software&limit=1`,
+          { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          results?: Array<{
+            trackName?: string;
+            trackViewUrl?: string;
+            description?: string;
+            formattedPrice?: string;
+            averageUserRating?: number;
+            userRatingCount?: number;
+            version?: string;
+            releaseNotes?: string;
+            genres?: string[];
+          }>;
+        };
+        const app = json.results?.[0];
+        if (!app?.trackName) return;
+        const nameMatch =
+          app.trackName.toLowerCase().includes(productName.toLowerCase()) ||
+          productName.toLowerCase().includes(app.trackName.toLowerCase().split(/[:\-–]/)[0].trim());
+        if (!nameMatch) return;
+        blocks.push(
+          `SOURCE — Apple App Store listing for "${app.trackName}":\n` +
+            [
+              app.formattedPrice ? `Price: ${app.formattedPrice}` : "",
+              app.averageUserRating
+                ? `Rating: ${app.averageUserRating.toFixed(1)}/5 from ${app.userRatingCount ?? 0} ratings`
+                : "",
+              app.genres?.length ? `Categories: ${app.genres.join(", ")}` : "",
+              app.version ? `Latest version: ${app.version}` : "",
+              app.releaseNotes ? `Latest release notes: ${app.releaseNotes.slice(0, 600)}` : "",
+              app.description ? `Description: ${app.description.slice(0, 1500)}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+        );
+        if (app.trackViewUrl) {
+          sources.push({ url: app.trackViewUrl, title: `${app.trackName} on the App Store` });
+        }
+      } catch {
+        /* ignore */
+      }
+    })(),
+  );
+
+  // 3. Wikipedia summary (company/product background).
+  tasks.push(
+    (async () => {
+      try {
+        const searchRes = await fetch(
+          `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(productName)}&limit=1`,
+          { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) },
+        );
+        if (!searchRes.ok) return;
+        const searchJson = (await searchRes.json()) as {
+          pages?: Array<{ key?: string; title?: string }>;
+        };
+        const page = searchJson.pages?.[0];
+        if (!page?.key) return;
+        const sumRes = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(page.key)}`,
+          { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) },
+        );
+        if (!sumRes.ok) return;
+        const sum = (await sumRes.json()) as {
+          extract?: string;
+          title?: string;
+          content_urls?: { desktop?: { page?: string } };
+        };
+        if (!sum.extract || sum.extract.length < 120) return;
+        blocks.push(`SOURCE — Wikipedia (${sum.title}):\n${sum.extract.slice(0, 2000)}`);
+        const wikiUrl =
+          sum.content_urls?.desktop?.page ??
+          `https://en.wikipedia.org/wiki/${encodeURIComponent(page.key)}`;
+        sources.push({ url: wikiUrl, title: `${sum.title} — Wikipedia` });
+      } catch {
+        /* ignore */
+      }
+    })(),
+  );
+
+  await Promise.allSettled(tasks);
+
+  return { material: blocks.join("\n\n---\n\n").slice(0, 18000), sources };
+}
+
+// Dedicated research pass: gather real public pages, then have the model
+// condense them into a factual briefing. Never throws — grounding is optional.
 async function fetchWebResearch(
   productName: string,
   url: string,
   apiKey: string,
-): Promise<{ briefing: string; sources: { url: string; title: string }[] }> {
+): Promise<{ briefing: string; sources: WebSource[] }> {
   try {
+    const { material, sources } = await gatherResearchMaterial(productName, url);
+    if (!material || material.length < 200) return { briefing: "", sources: [] };
+
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash:online",
-        plugins: [
-          {
-            id: "web",
-            max_results: 5,
-            search_prompt: `Search for real, current information about "${productName}"${url ? ` (${url})` : ""}: its actual features, pricing/plans, recent updates, and real user reviews.`,
-          },
-        ],
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
             content:
-              "You are a research assistant. Search for and report real, current facts about the given product: core features, pricing/plans, recent updates or news, and general reception. Be concise — 150-250 words, plain prose, no speculation. If search returns nothing useful, say so explicitly rather than filling in from general knowledge.",
+              "You are a research assistant. You are given raw text scraped from real public sources about a product. Report ONLY facts that are actually present in that material: core features, pricing/plans, recent updates, and user reception/ratings. Be concise — 150-250 words, plain prose, no speculation, no marketing fluff. Never add facts that are not in the material. If the material contains nothing useful about the product, reply with exactly: NO_USEFUL_RESULTS",
           },
           {
             role: "user",
-            content: `Product: ${productName}${url ? ` (${url})` : ""}`,
+            content: `Product: ${productName}${url ? ` (${url})` : ""}\n\nRAW SOURCE MATERIAL:\n${material}`,
           },
         ],
       }),
@@ -147,29 +305,18 @@ async function fetchWebResearch(
       return { briefing: "", sources: [] };
     }
     const json = (await res.json()) as {
-      choices?: {
-        message?: {
-          content?: string;
-          annotations?: Array<{ type?: string; url_citation?: { url?: string; title?: string } }>;
-        };
-      }[];
+      choices?: { message?: { content?: string } }[];
     };
-    const message = json.choices?.[0]?.message;
-    const briefing = (message?.content ?? "").trim();
-    const sources = (message?.annotations ?? [])
-      .filter((a) => a?.type === "url_citation" && a.url_citation?.url)
-      .map((a) => ({
-        url: a.url_citation!.url as string,
-        title: (a.url_citation!.title || a.url_citation!.url) as string,
-      }))
-      .filter((s, i, arr) => arr.findIndex((x) => x.url === s.url) === i);
-
-    if (briefing.length < 40) return { briefing: "", sources: [] };
+    const briefing = (json.choices?.[0]?.message?.content ?? "").trim();
+    if (briefing.length < 60 || /NO_USEFUL_RESULTS/i.test(briefing)) {
+      return { briefing: "", sources: [] };
+    }
     return { briefing, sources };
   } catch {
     return { briefing: "", sources: [] };
   }
 }
+
 
 
 export const generateTeardown = createServerFn({ method: "POST" })
